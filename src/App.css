@@ -1,0 +1,16 @@
+body, html, #root { margin: 0; height: 100%; font-family: 'Poppins', sans-serif; background: linear-gradient(135deg, #0f2027, #203a43, #2c5364); color: white; }
+.app-container { display: flex; flex-direction: column; height: 100vh; }
+.app-header { padding: 1rem 2rem; font-size: 2rem; text-align: center; background: rgba(0,0,0,0.5); backdrop-filter: blur(5px); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+.main-content { display: flex; flex: 1; overflow: hidden; gap: 1rem; padding: 1rem; }
+.globe-section { flex: 2; display: flex; flex-direction: column; align-items: center; position: relative; }
+.hover-info { margin-top: 10px; padding: 0.5rem 1rem; border-radius: 10px; background: rgba(255,255,255,0.1); backdrop-filter: blur(5px); box-shadow: 0 0 10px rgba(0,0,0,0.4); transition: all 0.3s ease; }
+.sidebar { flex: 1; display: flex; flex-direction: column; gap: 1rem; overflow-y: auto; }
+.chart-panel { background: rgba(0,0,0,0.6); padding: 1rem; border-radius: 15px; backdrop-filter: blur(5px); box-shadow: 0 0 15px rgba(0,0,0,0.5); }
+.chart-controls { display: flex; gap: 1rem; margin-bottom: 0.5rem; }
+.chart-controls label { display: flex; flex-direction: column; font-size: 0.8rem; }
+.data-panel { background: rgba(0,0,0,0.6); padding: 1rem; border-radius: 15px; backdrop-filter: blur(5px); max-height: 350px; overflow-y: auto; }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 0.5rem; text-align: left; }
+th { background: rgba(0,0,0,0.7); position: sticky; top: 0; }
+tr:hover { background: rgba(255,255,255,0.1); cursor: pointer; }
+tr.selected { background: rgba(0,255,0,0.4); }
