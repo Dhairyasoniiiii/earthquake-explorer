@@ -240,34 +240,40 @@ const App: React.FC = () => {
         saveRequestHistory([]); // Clear history to start fresh
       }
       
+      // Get current request history
       let history = getRequestHistory();
       
       // Remove requests older than 60 seconds
       history = cleanOldRequests(history, now);
-      console.log(`📊 ${history.length} requests in last 60 seconds`);
       
-      // Update request count state for UI display
-      setRequestCount(history.length);
-
-      // Rate limit: max 10 requests in the last 60 seconds
-      // When hit, enforce 120 second (2 minute) cooldown
+      // CRITICAL: Check count BEFORE adding this request
+      console.log(`📊 Current count: ${history.length}/10 requests in last 60s`);
+      
+      // If we already have 10 requests in the last 60 seconds, BLOCK THIS ONE
       if (history.length >= 10) {
-        const cooldownEndTime = now + 120000; // 120 seconds from now
-        console.warn(`⚠️ RATE LIMIT HIT! Blocking all requests for 120 seconds`);
+        // HIT THE LIMIT - Start 120 second cooldown
+        const cooldownEndTime = now + 120000;
+        console.error(`🚨 RATE LIMIT EXCEEDED! Already have ${history.length} requests. BLOCKING for 120s!`);
+        
         setRateLimitReached(true);
         setRateLimitResetIn(120);
         setRequestCount(10);
         saveCooldownEndTime(cooldownEndTime);
         saveRequestHistory(history);
         setLoading(false);
-        return;
+        return; // STOP HERE - don't fetch, don't add to history
       }
 
-      // Add this request to history
+      // Safe to proceed - add this request to history FIRST
       history.push(now);
       saveRequestHistory(history);
+      
+      const newCount = history.length;
+      setRequestCount(newCount);
       setRateLimitReached(false);
       setRateLimitResetIn(0);
+      
+      console.log(`✅ Request #${newCount}/10 - fetching now...`);
 
       try {
         console.log("🌐 Fetching from USGS...");
@@ -297,7 +303,7 @@ const App: React.FC = () => {
         console.log(`✅ Parsed ${parsed.length} earthquakes`);
         
         setEarthquakeData(parsed);
-        console.log(`✓ Data updated - Request ${history.length}/10`);
+        console.log(`✓ SUCCESS - Request #${newCount}/10 complete`);
         
       } catch (err) {
         console.error("❌ Fetch failed:", err);
