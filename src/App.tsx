@@ -384,6 +384,8 @@ const App: React.FC = () => {
         const remaining = Math.max(0, Math.ceil((cooldownEnd - now) / 1000));
         setRateLimitResetIn(remaining);
         setRequestCount(10);
+        setRateLimitReached(true); // Make sure rate limit flag is set
+        // DON'T clean old requests during cooldown - keep showing 10/10
         return;
       } else if (cooldownEnd && now >= cooldownEnd) {
         // Cooldown just expired
@@ -396,7 +398,7 @@ const App: React.FC = () => {
         return;
       }
       
-      // Update request count
+      // Only update request count if NOT in cooldown
       let history = getRequestHistory();
       history = cleanOldRequests(history, now);
       saveRequestHistory(history);
