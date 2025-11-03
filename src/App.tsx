@@ -292,6 +292,10 @@ const App: React.FC = () => {
         saveCooldownEndTime(cooldownEndTime);
         setRateLimitReached(true);
         setRateLimitResetIn(120);
+        
+        // IMPORTANT: Clear loading immediately so rate limit screen shows
+        // The 10th request will continue and complete in background
+        setLoading(false);
       } else {
         setRateLimitReached(false);
         setRateLimitResetIn(0);
