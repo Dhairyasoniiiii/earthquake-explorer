@@ -145,9 +145,6 @@ const App: React.FC = () => {
   
   // Time remaining until rate limit resets (in seconds)
   const [rateLimitResetIn, setRateLimitResetIn] = useState<number>(0);
-  
-  // Current request count in the last 60 seconds
-  const [requestCount, setRequestCount] = useState<number>(0);
 
   /**
    * Fetches earthquake data from USGS and sets up auto-refresh.
@@ -155,7 +152,6 @@ const App: React.FC = () => {
    * Refreshes every 10 seconds but caps at 10 requests per minute using a sliding window.
    */
   useEffect(() => {
-    console.log("App useEffect initialized");
     let cancelled = false;
     let countdownInterval: ReturnType<typeof setInterval>;
     let fetchInterval: ReturnType<typeof setInterval>;
@@ -177,7 +173,6 @@ const App: React.FC = () => {
       try {
         localStorage.setItem('earthquakeRequestHistory', JSON.stringify(timestamps));
       } catch (err) {
-        console.error("Failed to save request history:", err);
       }
     };
     
@@ -200,7 +195,6 @@ const App: React.FC = () => {
           localStorage.setItem('earthquakeCooldownEnd', endTime.toString());
         }
       } catch (err) {
-        console.error("Failed to save cooldown time:", err);
       }
     };
 
@@ -211,62 +205,48 @@ const App: React.FC = () => {
 
     const fetchData = async () => {
       if (cancelled) {
-        console.log("Fetch cancelled - component unmounted");
         return;
       }
 
-      console.log("=== Starting fetchData ===");
       const now = Date.now();
       
       // Check if we're in cooldown period (120 seconds after hitting limit)
       const cooldownEnd = getCooldownEndTime();
-      console.log("Cooldown end time:", cooldownEnd);
-      console.log("Current time:", now);
       
       if (cooldownEnd && now < cooldownEnd) {
         const remaining = Math.ceil((cooldownEnd - now) / 1000);
-        console.warn(`In cooldown period: ${remaining}s remaining`);
         setRateLimitReached(true);
         setRateLimitResetIn(remaining);
-        setRequestCount(10); // Show 10/10 during cooldown
         setLoading(false);
         return;
       }
       
       // Cooldown expired, clear it
       if (cooldownEnd && now >= cooldownEnd) {
-        console.log("Cooldown period ended - clearing restrictions");
         saveCooldownEndTime(null);
         saveRequestHistory([]); // Clear history to start fresh
       }
       
       // Get current request history
       let history = getRequestHistory();
-      console.log("Request history:", history);
       
       // Remove requests older than 60 seconds
       history = cleanOldRequests(history, now);
-      console.log("After cleanup:", history);
       
       // CRITICAL: Check count BEFORE adding this request
-      console.log(`Current count: ${history.length}/10 requests in last 60s`);
       
       // If we already have 10 requests in the last 60 seconds, BLOCK THIS ONE
       if (history.length >= 10) {
         // HIT THE LIMIT - Start 120 second cooldown
         const cooldownEndTime = now + 120000;
-        console.error(`RATE LIMIT EXCEEDED! Already have ${history.length} requests. BLOCKING for 120s!`);
-        console.error(`Cooldown will end at: ${new Date(cooldownEndTime).toLocaleTimeString()}`);
         
         setRateLimitReached(true);
         setRateLimitResetIn(120);
-        setRequestCount(10);
         saveCooldownEndTime(cooldownEndTime);
         saveRequestHistory(history);
         setLoading(false);
         
         // IMPORTANT: Don't add this request to history
-        console.error("Request BLOCKED - not added to history");
         return; // STOP HERE - don't fetch, don't add to history
       }
 
@@ -275,15 +255,11 @@ const App: React.FC = () => {
       saveRequestHistory(history);
       
       const newCount = history.length;
-      setRequestCount(newCount);
       
       // Check if THIS request brings us to the limit (10/10)
       if (newCount >= 10) {
         // This is the 10th request - trigger cooldown IMMEDIATELY
         const cooldownEndTime = now + 120000;
-        console.warn(`⚠️ This is request #${newCount}/10 - LIMIT REACHED!`);
-        console.warn(`⚠️ Setting 120-second cooldown NOW`);
-        console.warn(`⚠️ Cooldown ends at: ${new Date(cooldownEndTime).toLocaleTimeString()}`);
         
         // Set cooldown BEFORE the fetch so next click is blocked
         saveCooldownEndTime(cooldownEndTime);
@@ -298,11 +274,8 @@ const App: React.FC = () => {
         setRateLimitResetIn(0);
       }
       
-      console.log(`✓ Request #${newCount}/10 - fetching now...`);
-      console.log(`Requests in history: [${history.map(t => new Date(t).toLocaleTimeString()).join(', ')}]`);
 
       try {
-        console.log("Fetching from USGS...");
         const res = await fetch(
           "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_month.csv",
           { 
@@ -311,57 +284,46 @@ const App: React.FC = () => {
           }
         );
         
-        console.log(`Response: ${res.status} ${res.statusText}`);
         
         if (!res.ok) {
           throw new Error(`HTTP ${res.status}: ${res.statusText}`);
         }
         
         const text = await res.text();
-        console.log(`Received ${text.length} chars`);
         
         if (cancelled) {
-          console.log("Cancelled after fetch");
           return;
         }
         
         const parsed = parseUSGSCsv(text);
-        console.log(`Parsed ${parsed.length} earthquakes`);
         
         setEarthquakeData(parsed);
-        console.log(`✓ SUCCESS - Request #${newCount}/10 complete`);
         
       } catch (err) {
-        console.error("Fetch failed:", err);
         // On error, still set empty array so app can render
         if (!cancelled) {
           setEarthquakeData([]);
         }
       } finally {
         if (!cancelled) {
-          console.log("Clearing loading state");
           setLoading(false);
         }
       }
     };
 
     // Clean up old localStorage data on mount
-    console.log("Cleaning stale request history");
     const now = Date.now();
     
     // Check if there's an active cooldown
     const cooldownEnd = getCooldownEndTime();
     if (cooldownEnd && now < cooldownEnd) {
       const remaining = Math.ceil((cooldownEnd - now) / 1000);
-      console.warn(`Active cooldown on mount - ${remaining}s remaining`);
       setRateLimitReached(true);
       setRateLimitResetIn(remaining);
-      setRequestCount(10);
       setLoading(false);
       // IMPORTANT: Don't clean old requests during cooldown!
     } else if (cooldownEnd && now >= cooldownEnd) {
       // Cooldown expired, clean it up
-      console.log("Clearing expired cooldown");
       saveCooldownEndTime(null);
       saveRequestHistory([]);
     } else {
@@ -370,7 +332,6 @@ const App: React.FC = () => {
       const cleanedHistory = cleanOldRequests(initialHistory, now);
       
       if (cleanedHistory.length !== initialHistory.length) {
-        console.log(`Removed ${initialHistory.length - cleanedHistory.length} stale requests`);
         saveRequestHistory(cleanedHistory);
       }
     }
@@ -386,18 +347,15 @@ const App: React.FC = () => {
       if (cooldownEnd && now < cooldownEnd) {
         const remaining = Math.max(0, Math.ceil((cooldownEnd - now) / 1000));
         setRateLimitResetIn(remaining);
-        setRequestCount(10);
         setRateLimitReached(true); // Make sure rate limit flag is set
         // DON'T clean old requests during cooldown - keep showing 10/10
         return;
       } else if (cooldownEnd && now >= cooldownEnd) {
         // Cooldown just expired
-        console.log("Cooldown expired - resetting");
         saveCooldownEndTime(null);
         saveRequestHistory([]);
         setRateLimitReached(false);
         setRateLimitResetIn(0);
-        setRequestCount(0);
         return;
       }
       
@@ -405,7 +363,6 @@ const App: React.FC = () => {
       let history = getRequestHistory();
       history = cleanOldRequests(history, now);
       saveRequestHistory(history);
-      setRequestCount(history.length);
       
       if (history.length >= 10) {
         // This shouldn't happen if cooldown logic is working, but just in case
@@ -417,15 +374,12 @@ const App: React.FC = () => {
     }, 1000);
 
     // Initial fetch
-    console.log("Scheduling initial fetch");
     
     // Don't fetch on mount if there's an active cooldown
     const mountCooldownEnd = getCooldownEndTime();
     if (!mountCooldownEnd || Date.now() >= mountCooldownEnd) {
-      console.log("Fetching initial data");
       fetchData();
     } else {
-      console.log("Skipping initial fetch - cooldown active");
     }
     
     // Refresh every 10 seconds - but skip if rate limited
@@ -438,14 +392,12 @@ const App: React.FC = () => {
       
       // Skip auto-refresh if in cooldown
       if (cooldownEnd && now < cooldownEnd) {
-        console.log("Auto-refresh skipped - in cooldown period");
         return;
       }
       
       // Check request count
       const history = cleanOldRequests(getRequestHistory(), now);
       if (history.length >= 10) {
-        console.log("Auto-refresh skipped - at rate limit");
         return;
       }
       
@@ -454,7 +406,6 @@ const App: React.FC = () => {
     }, 10000);
 
     return () => {
-      console.log("Cleaning up intervals");
       cancelled = true;
       clearInterval(fetchInterval);
       clearInterval(countdownInterval);
@@ -866,24 +817,6 @@ const App: React.FC = () => {
                 boxShadow: "0 2px 8px rgba(236, 72, 153, 0.2)"
               }}>
                 Avg Mag: <strong style={{ color: "#ec4899" }}>{stats.avgMag.toFixed(1)}</strong>
-              </span>
-              <span style={{ 
-                background: rateLimitReached 
-                  ? "linear-gradient(135deg, rgba(255, 59, 48, 0.3), rgba(255, 59, 48, 0.2))"
-                  : "linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(34, 197, 94, 0.1))", 
-                padding: "8px 14px", 
-                borderRadius: 8, 
-                fontSize: 13,
-                border: rateLimitReached 
-                  ? "1px solid rgba(255, 59, 48, 0.4)"
-                  : "1px solid rgba(34, 197, 94, 0.3)",
-                boxShadow: rateLimitReached
-                  ? "0 2px 8px rgba(255, 59, 48, 0.3)"
-                  : "0 2px 8px rgba(34, 197, 94, 0.2)"
-              }}>
-                Requests: <strong style={{ color: rateLimitReached ? "#ff3b30" : "#22c55e" }}>
-                  {requestCount}/10
-                </strong>
               </span>
             </div>
             
