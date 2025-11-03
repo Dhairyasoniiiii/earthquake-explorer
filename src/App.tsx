@@ -415,7 +415,15 @@ const App: React.FC = () => {
 
     // Initial fetch
     console.log("Scheduling initial fetch");
-    fetchData();
+    
+    // Don't fetch on mount if there's an active cooldown
+    const mountCooldownEnd = getCooldownEndTime();
+    if (!mountCooldownEnd || Date.now() >= mountCooldownEnd) {
+      console.log("Fetching initial data");
+      fetchData();
+    } else {
+      console.log("Skipping initial fetch - cooldown active");
+    }
     
     // Expose manual refresh function
     manualRefreshRef.current = fetchData;
