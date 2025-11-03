@@ -259,6 +259,7 @@ const App: React.FC = () => {
         // HIT THE LIMIT - Start 120 second cooldown
         const cooldownEndTime = now + 120000;
         console.error(`RATE LIMIT EXCEEDED! Already have ${history.length} requests. BLOCKING for 120s!`);
+        console.error(`Cooldown will end at: ${new Date(cooldownEndTime).toLocaleTimeString()}`);
         
         setRateLimitReached(true);
         setRateLimitResetIn(120);
@@ -266,6 +267,9 @@ const App: React.FC = () => {
         saveCooldownEndTime(cooldownEndTime);
         saveRequestHistory(history);
         setLoading(false);
+        
+        // IMPORTANT: Don't add this request to history
+        console.error("Request BLOCKED - not added to history");
         return; // STOP HERE - don't fetch, don't add to history
       }
 
@@ -275,10 +279,26 @@ const App: React.FC = () => {
       
       const newCount = history.length;
       setRequestCount(newCount);
-      setRateLimitReached(false);
-      setRateLimitResetIn(0);
       
-      console.log(`Request #${newCount}/10 - fetching now...`);
+      // Check if THIS request brings us to the limit (10/10)
+      if (newCount >= 10) {
+        // This is the 10th request - trigger cooldown IMMEDIATELY
+        const cooldownEndTime = now + 120000;
+        console.warn(`⚠️ This is request #${newCount}/10 - LIMIT REACHED!`);
+        console.warn(`⚠️ Setting 120-second cooldown NOW`);
+        console.warn(`⚠️ Cooldown ends at: ${new Date(cooldownEndTime).toLocaleTimeString()}`);
+        
+        // Set cooldown BEFORE the fetch so next click is blocked
+        saveCooldownEndTime(cooldownEndTime);
+        setRateLimitReached(true);
+        setRateLimitResetIn(120);
+      } else {
+        setRateLimitReached(false);
+        setRateLimitResetIn(0);
+      }
+      
+      console.log(`✓ Request #${newCount}/10 - fetching now...`);
+      console.log(`Requests in history: [${history.map(t => new Date(t).toLocaleTimeString()).join(', ')}]`);
 
       try {
         console.log("Fetching from USGS...");
