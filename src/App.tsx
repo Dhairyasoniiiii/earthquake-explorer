@@ -218,11 +218,14 @@ const App: React.FC = () => {
         return;
       }
 
-      console.log("Starting fetchData");
+      console.log("=== Starting fetchData ===");
       const now = Date.now();
       
       // Check if we're in cooldown period (120 seconds after hitting limit)
       const cooldownEnd = getCooldownEndTime();
+      console.log("Cooldown end time:", cooldownEnd);
+      console.log("Current time:", now);
+      
       if (cooldownEnd && now < cooldownEnd) {
         const remaining = Math.ceil((cooldownEnd - now) / 1000);
         console.warn(`In cooldown period: ${remaining}s remaining`);
@@ -242,9 +245,11 @@ const App: React.FC = () => {
       
       // Get current request history
       let history = getRequestHistory();
+      console.log("Request history:", history);
       
       // Remove requests older than 60 seconds
       history = cleanOldRequests(history, now);
+      console.log("After cleanup:", history);
       
       // CRITICAL: Check count BEFORE adding this request
       console.log(`Current count: ${history.length}/10 requests in last 60s`);
@@ -852,6 +857,9 @@ const App: React.FC = () => {
               </span>
               <button
                 onClick={() => {
+                  console.log("Manual refresh clicked!");
+                  console.log("Rate limited:", rateLimitReached);
+                  console.log("Current count:", requestCount);
                   if (manualRefreshRef.current) {
                     manualRefreshRef.current();
                   }
@@ -875,6 +883,32 @@ const App: React.FC = () => {
                 title={rateLimitReached ? `Rate limited - wait ${rateLimitResetIn}s` : "Manually refresh data"}
               >
                 Refresh Now
+              </button>
+              <button
+                onClick={() => {
+                  console.log("Clearing rate limit data...");
+                  localStorage.removeItem('earthquakeRequestHistory');
+                  localStorage.removeItem('earthquakeCooldownEnd');
+                  setRateLimitReached(false);
+                  setRateLimitResetIn(0);
+                  setRequestCount(0);
+                  console.log("Rate limit cleared!");
+                }}
+                style={{
+                  background: "linear-gradient(135deg, #ef4444, #dc2626)",
+                  color: "white",
+                  border: "none",
+                  padding: "8px 16px",
+                  borderRadius: 8,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  boxShadow: "0 2px 8px rgba(239, 68, 68, 0.3)",
+                  transition: "all 0.2s ease"
+                }}
+                title="Clear rate limit (for testing)"
+              >
+                Reset Limit
               </button>
             </div>
             
