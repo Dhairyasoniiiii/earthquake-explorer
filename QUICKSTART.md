@@ -1,4 +1,4 @@
-# 🚀 Quick Start Guide
+# Quick Start Guide
 
 Get the Earthquake Explorer running in 3 minutes!
 
@@ -74,4 +74,4 @@ npm install
 
 ---
 
-Enjoy exploring earthquakes! 🌍
+Enjoy exploring earthquakes!

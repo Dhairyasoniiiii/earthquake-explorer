@@ -158,7 +158,7 @@ const App: React.FC = () => {
    * Refreshes every 10 seconds but caps at 10 requests per minute using a sliding window.
    */
   useEffect(() => {
-    console.log("🚀 App useEffect initialized");
+    console.log("App useEffect initialized");
     let cancelled = false;
     let countdownInterval: ReturnType<typeof setInterval>;
     let fetchInterval: ReturnType<typeof setInterval>;
@@ -214,18 +214,18 @@ const App: React.FC = () => {
 
     const fetchData = async () => {
       if (cancelled) {
-        console.log("⏹️ Fetch cancelled - component unmounted");
+        console.log("Fetch cancelled - component unmounted");
         return;
       }
 
-      console.log("� Starting fetchData");
+      console.log("Starting fetchData");
       const now = Date.now();
       
       // Check if we're in cooldown period (120 seconds after hitting limit)
       const cooldownEnd = getCooldownEndTime();
       if (cooldownEnd && now < cooldownEnd) {
         const remaining = Math.ceil((cooldownEnd - now) / 1000);
-        console.warn(`🚫 In cooldown period: ${remaining}s remaining`);
+        console.warn(`In cooldown period: ${remaining}s remaining`);
         setRateLimitReached(true);
         setRateLimitResetIn(remaining);
         setRequestCount(10); // Show 10/10 during cooldown
@@ -235,7 +235,7 @@ const App: React.FC = () => {
       
       // Cooldown expired, clear it
       if (cooldownEnd && now >= cooldownEnd) {
-        console.log("✅ Cooldown period ended - clearing restrictions");
+        console.log("Cooldown period ended - clearing restrictions");
         saveCooldownEndTime(null);
         saveRequestHistory([]); // Clear history to start fresh
       }
@@ -247,13 +247,13 @@ const App: React.FC = () => {
       history = cleanOldRequests(history, now);
       
       // CRITICAL: Check count BEFORE adding this request
-      console.log(`📊 Current count: ${history.length}/10 requests in last 60s`);
+      console.log(`Current count: ${history.length}/10 requests in last 60s`);
       
       // If we already have 10 requests in the last 60 seconds, BLOCK THIS ONE
       if (history.length >= 10) {
         // HIT THE LIMIT - Start 120 second cooldown
         const cooldownEndTime = now + 120000;
-        console.error(`🚨 RATE LIMIT EXCEEDED! Already have ${history.length} requests. BLOCKING for 120s!`);
+        console.error(`RATE LIMIT EXCEEDED! Already have ${history.length} requests. BLOCKING for 120s!`);
         
         setRateLimitReached(true);
         setRateLimitResetIn(120);
@@ -273,10 +273,10 @@ const App: React.FC = () => {
       setRateLimitReached(false);
       setRateLimitResetIn(0);
       
-      console.log(`✅ Request #${newCount}/10 - fetching now...`);
+      console.log(`Request #${newCount}/10 - fetching now...`);
 
       try {
-        console.log("🌐 Fetching from USGS...");
+        console.log("Fetching from USGS...");
         const res = await fetch(
           "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_month.csv",
           { 
@@ -285,56 +285,56 @@ const App: React.FC = () => {
           }
         );
         
-        console.log(`📡 Response: ${res.status} ${res.statusText}`);
+        console.log(`Response: ${res.status} ${res.statusText}`);
         
         if (!res.ok) {
           throw new Error(`HTTP ${res.status}: ${res.statusText}`);
         }
         
         const text = await res.text();
-        console.log(`📄 Received ${text.length} chars`);
+        console.log(`Received ${text.length} chars`);
         
         if (cancelled) {
-          console.log("⏹️ Cancelled after fetch");
+          console.log("Cancelled after fetch");
           return;
         }
         
         const parsed = parseUSGSCsv(text);
-        console.log(`✅ Parsed ${parsed.length} earthquakes`);
+        console.log(`Parsed ${parsed.length} earthquakes`);
         
         setEarthquakeData(parsed);
         console.log(`✓ SUCCESS - Request #${newCount}/10 complete`);
         
       } catch (err) {
-        console.error("❌ Fetch failed:", err);
+        console.error("Fetch failed:", err);
         // On error, still set empty array so app can render
         if (!cancelled) {
           setEarthquakeData([]);
         }
       } finally {
         if (!cancelled) {
-          console.log("🏁 Clearing loading state");
+          console.log("Clearing loading state");
           setLoading(false);
         }
       }
     };
 
     // Clean up old localStorage data on mount
-    console.log("🧹 Cleaning stale request history");
+    console.log("Cleaning stale request history");
     const now = Date.now();
     
     // Check if there's an active cooldown
     const cooldownEnd = getCooldownEndTime();
     if (cooldownEnd && now < cooldownEnd) {
       const remaining = Math.ceil((cooldownEnd - now) / 1000);
-      console.warn(`⚠️ Active cooldown on mount - ${remaining}s remaining`);
+      console.warn(`Active cooldown on mount - ${remaining}s remaining`);
       setRateLimitReached(true);
       setRateLimitResetIn(remaining);
       setRequestCount(10);
       setLoading(false);
     } else if (cooldownEnd && now >= cooldownEnd) {
       // Cooldown expired, clean it up
-      console.log("🧹 Clearing expired cooldown");
+      console.log("Clearing expired cooldown");
       saveCooldownEndTime(null);
       saveRequestHistory([]);
     }
@@ -362,7 +362,7 @@ const App: React.FC = () => {
         return;
       } else if (cooldownEnd && now >= cooldownEnd) {
         // Cooldown just expired
-        console.log("✅ Cooldown expired - resetting");
+        console.log("Cooldown expired - resetting");
         saveCooldownEndTime(null);
         saveRequestHistory([]);
         setRateLimitReached(false);
@@ -387,7 +387,7 @@ const App: React.FC = () => {
     }, 1000);
 
     // Initial fetch
-    console.log("⏱️ Scheduling initial fetch");
+    console.log("Scheduling initial fetch");
     fetchData();
     
     // Expose manual refresh function
@@ -401,7 +401,7 @@ const App: React.FC = () => {
     }, 10000);
 
     return () => {
-      console.log("🛑 Cleaning up intervals");
+      console.log("Cleaning up intervals");
       cancelled = true;
       clearInterval(fetchInterval);
       clearInterval(countdownInterval);
@@ -540,7 +540,7 @@ const App: React.FC = () => {
           }}
         >
           <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>
-            ⚠️ Rate Limit Reached
+            Rate Limit Reached
           </div>
           <div style={{ fontSize: 13, opacity: 0.95 }}>
             Maximum 10 refreshes per minute reached.
@@ -720,7 +720,7 @@ const App: React.FC = () => {
             textAlign: "center",
           }}
         >
-          <div style={{ fontSize: 72 }}>⚠️</div>
+          <div style={{ fontSize: 72 }}>!</div>
           <div style={{ fontSize: 24, fontWeight: 700 }}>
             Maximum Refresh Limit Reached
           </div>
@@ -856,7 +856,7 @@ const App: React.FC = () => {
                 }}
                 title={rateLimitReached ? `Rate limited - wait ${rateLimitResetIn}s` : "Manually refresh data"}
               >
-                🔄 Refresh Now
+                Refresh Now
               </button>
             </div>
             
@@ -935,7 +935,7 @@ const App: React.FC = () => {
                     </select>
                   </label>
                   <button className="btn" onClick={() => setShowGlobeModal(true)} style={{ marginLeft: "auto", fontSize: 12 }}>
-                    ⛶ Expand
+                    Expand
                   </button>
                 </div>
                 <div
@@ -1003,7 +1003,7 @@ const App: React.FC = () => {
                   onClick={() => setTableCollapsed((c) => !c)}
                   title={tableCollapsed ? "Expand data table" : "Collapse data table"}
                 >
-                  <span>📊 Data Table ({stats.count})</span>
+                  <span>Data Table ({stats.count})</span>
                   <span style={{ 
                     transform: tableCollapsed ? "rotate(-90deg)" : "rotate(90deg)", 
                     transition: "transform 0.2s ease",
@@ -1029,7 +1029,7 @@ const App: React.FC = () => {
               {selected && (
                 <div className="card" style={{ padding: 12, flexShrink: 0 }}>
                   <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 8, opacity: 0.8 }}>
-                    📍 Selected Event
+                    Selected Event
                   </div>
                   <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>
                     {selected.place}
@@ -1178,7 +1178,7 @@ const App: React.FC = () => {
                   if (eq) {
                     setSelected(eq);
                     setToast({
-                      title: "📍 Selected Event",
+                      title: "Selected Event",
                       lines: [
                         eq.place,
                         `Magnitude: ${eq.magnitude.toFixed(1)}`,

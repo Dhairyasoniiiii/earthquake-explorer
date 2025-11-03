@@ -1,4 +1,4 @@
-# 🚀 Deployment Guide - Earthquake Explorer
+# Deployment Guide - Earthquake Explorer
 
 This guide explains how to deploy your Earthquake Explorer app to Netlify.
 
@@ -111,13 +111,13 @@ git push
 
 Once deployed, verify everything works:
 
-1. ✅ Page loads without errors
-2. ✅ Loading animation shows briefly
-3. ✅ Earthquake data appears in table
-4. ✅ Charts display correctly
-5. ✅ Globe rotates smoothly
-6. ✅ Clicking table rows highlights chart points
-7. ✅ Expand globe modal works
+1. Page loads without errors
+2. Loading animation shows briefly
+3. Earthquake data appears in table
+4. Charts display correctly
+5. Globe rotates smoothly
+6. Clicking table rows highlights chart points
+7. Expand globe modal works
 
 ## Common Issues & Solutions
 
@@ -243,4 +243,4 @@ If you encounter issues:
 
 ---
 
-Happy deploying! 🚀
+Happy deploying!

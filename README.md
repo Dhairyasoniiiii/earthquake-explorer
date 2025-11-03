@@ -1,4 +1,4 @@
-# 🌍 Earthquake Explorer# React + TypeScript + Vite
+# Earthquake Explorer# React + TypeScript + Vite
 
 
 
@@ -10,7 +10,7 @@ A modern, interactive web application for visualizing real-time earthquake data 
 
 
 
-## 🚀 Live Demo- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
+## Live Demo- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
 
 - [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
@@ -18,7 +18,7 @@ A modern, interactive web application for visualizing real-time earthquake data 
 
 ## React Compiler
 
-## 📋 Project Overview
+## Project Overview
 
 The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 
@@ -36,7 +36,7 @@ This application fetches and displays earthquake data from the USGS (United Stat
 
 export default defineConfig([
 
-## ✨ Features  globalIgnores(['dist']),
+## Features  globalIgnores(['dist']),
 
   {
 
@@ -84,7 +84,7 @@ export default defineConfig([
 
 ])
 
-## 🛠️ Tech Stack```
+## Tech Stack```
 
 
 
@@ -134,7 +134,7 @@ import reactX from 'eslint-plugin-react-x'
 
       },
 
-## 📦 Installation      // other options...
+## Installation      // other options...
 
     },
 
@@ -168,7 +168,7 @@ import reactX from 'eslint-plugin-react-x'
    http://localhost:5173
    ```
 
-## 🏗️ Build for Production
+## Build for Production
 
 ```bash
 npm run build
@@ -181,7 +181,7 @@ To preview the production build locally:
 npm run preview
 ```
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 earthquake-explorer/
@@ -203,7 +203,7 @@ earthquake-explorer/
 └── vite.config.ts           # Vite build configuration
 ```
 
-## 🎯 State Management Approach
+## State Management Approach
 
 This project demonstrates three different state management patterns:
 
@@ -239,7 +239,7 @@ const filteredEarthquakes = useMemo(() =>
 );
 ```
 
-## 🔄 Data Flow
+## Data Flow
 
 1. **Initial Load**: 
    - App fetches CSV from USGS earthquake feed
@@ -256,14 +256,14 @@ const filteredEarthquakes = useMemo(() =>
    - Rate limiter prevents excessive requests
    - Visual feedback when rate limit is reached
 
-## 📊 Data Source
+## Data Source
 
 **USGS Earthquake Feed**
 - Source: https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_month.csv
 - Updates: Real-time (past 30 days)
 - Fields: magnitude, depth, latitude, longitude, time, place, type, station count, azimuthal gap, and more
 
-## 🚀 Deployment Guide
+## Deployment Guide
 
 ### Deploying to Netlify
 
@@ -307,7 +307,7 @@ Create a `netlify.toml` file in the root directory:
   status = 200
 ```
 
-## 🤖 Development Process
+## Development Process
 
 This project was built collaboratively, leveraging AI assistance for:
 
@@ -320,7 +320,7 @@ This project was built collaboratively, leveraging AI assistance for:
 
 The development followed an iterative approach, with continuous testing and refinement of features based on user experience considerations.
 
-## 🌟 Additional Features
+## Additional Features
 
 Beyond the core requirements, this project includes:
 
@@ -332,11 +332,11 @@ Beyond the core requirements, this project includes:
 6. **Auto-Refresh** - Real-time data updates
 7. **Magnitude Filtering** - Dynamic data subsetting
 
-## 📄 License
+## License
 
 MIT License - feel free to use this project for learning and development.
 
-## 👨‍💻 Author
+## Author
 
 **Dhairyasoniiiii**
 - GitHub: [@Dhairyasoniiiii](https://github.com/Dhairyasoniiiii)
@@ -344,3 +344,5 @@ MIT License - feel free to use this project for learning and development.
 ---
 
 Built with React, TypeScript, and modern web technologies.
+
+
