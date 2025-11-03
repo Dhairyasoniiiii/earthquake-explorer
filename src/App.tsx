@@ -183,6 +183,29 @@ const App: React.FC = () => {
         console.error("Failed to save request history:", err);
       }
     };
+    
+    // Get the cooldown end time from localStorage
+    const getCooldownEndTime = (): number | null => {
+      try {
+        const data = localStorage.getItem('earthquakeCooldownEnd');
+        return data ? parseInt(data, 10) : null;
+      } catch {
+        return null;
+      }
+    };
+    
+    // Save the cooldown end time to localStorage
+    const saveCooldownEndTime = (endTime: number | null) => {
+      try {
+        if (endTime === null) {
+          localStorage.removeItem('earthquakeCooldownEnd');
+        } else {
+          localStorage.setItem('earthquakeCooldownEnd', endTime.toString());
+        }
+      } catch (err) {
+        console.error("Failed to save cooldown time:", err);
+      }
+    };
 
     // Clean old requests (older than 60 seconds) from history
     const cleanOldRequests = (history: number[], now: number): number[] => {
@@ -197,6 +220,26 @@ const App: React.FC = () => {
 
       console.log("� Starting fetchData");
       const now = Date.now();
+      
+      // Check if we're in cooldown period (120 seconds after hitting limit)
+      const cooldownEnd = getCooldownEndTime();
+      if (cooldownEnd && now < cooldownEnd) {
+        const remaining = Math.ceil((cooldownEnd - now) / 1000);
+        console.warn(`🚫 In cooldown period: ${remaining}s remaining`);
+        setRateLimitReached(true);
+        setRateLimitResetIn(remaining);
+        setRequestCount(10); // Show 10/10 during cooldown
+        setLoading(false);
+        return;
+      }
+      
+      // Cooldown expired, clear it
+      if (cooldownEnd && now >= cooldownEnd) {
+        console.log("✅ Cooldown period ended - clearing restrictions");
+        saveCooldownEndTime(null);
+        saveRequestHistory([]); // Clear history to start fresh
+      }
+      
       let history = getRequestHistory();
       
       // Remove requests older than 60 seconds
@@ -207,15 +250,16 @@ const App: React.FC = () => {
       setRequestCount(history.length);
 
       // Rate limit: max 10 requests in the last 60 seconds
+      // When hit, enforce 120 second (2 minute) cooldown
       if (history.length >= 10) {
-        const oldestRequest = Math.min(...history);
-        const resetTime = oldestRequest + 60000;
-        const remaining = Math.ceil((resetTime - now) / 1000);
-        console.warn(`⚠️ Rate limited: ${history.length}/10 requests. Resets in ${remaining}s`);
+        const cooldownEndTime = now + 120000; // 120 seconds from now
+        console.warn(`⚠️ RATE LIMIT HIT! Blocking all requests for 120 seconds`);
         setRateLimitReached(true);
-        setRateLimitResetIn(remaining);
+        setRateLimitResetIn(120);
+        setRequestCount(10);
+        saveCooldownEndTime(cooldownEndTime);
         saveRequestHistory(history);
-        setLoading(false); // Ensure we're not stuck on loading
+        setLoading(false);
         return;
       }
 
@@ -272,6 +316,23 @@ const App: React.FC = () => {
     // Clean up old localStorage data on mount
     console.log("🧹 Cleaning stale request history");
     const now = Date.now();
+    
+    // Check if there's an active cooldown
+    const cooldownEnd = getCooldownEndTime();
+    if (cooldownEnd && now < cooldownEnd) {
+      const remaining = Math.ceil((cooldownEnd - now) / 1000);
+      console.warn(`⚠️ Active cooldown on mount - ${remaining}s remaining`);
+      setRateLimitReached(true);
+      setRateLimitResetIn(remaining);
+      setRequestCount(10);
+      setLoading(false);
+    } else if (cooldownEnd && now >= cooldownEnd) {
+      // Cooldown expired, clean it up
+      console.log("🧹 Clearing expired cooldown");
+      saveCooldownEndTime(null);
+      saveRequestHistory([]);
+    }
+    
     let initialHistory = getRequestHistory();
     const cleanedHistory = cleanOldRequests(initialHistory, now);
     
@@ -279,32 +340,40 @@ const App: React.FC = () => {
       console.log(`Removed ${initialHistory.length - cleanedHistory.length} stale requests`);
       saveRequestHistory(cleanedHistory);
     }
-    
-    // Check if we're rate limited on mount
-    if (cleanedHistory.length >= 10) {
-      const oldestRequest = Math.min(...cleanedHistory);
-      const resetTime = oldestRequest + 60000;
-      const remaining = Math.ceil((resetTime - now) / 1000);
-      console.warn(`⚠️ Rate limited on mount - ${remaining}s remaining`);
-      setRateLimitReached(true);
-      setRateLimitResetIn(remaining);
-      setLoading(false); // Don't stay on loading screen if rate limited
-    }
 
     // Update countdown every second
     countdownInterval = setInterval(() => {
       if (cancelled) return;
       
       const now = Date.now();
+      
+      // Check cooldown first
+      const cooldownEnd = getCooldownEndTime();
+      if (cooldownEnd && now < cooldownEnd) {
+        const remaining = Math.max(0, Math.ceil((cooldownEnd - now) / 1000));
+        setRateLimitResetIn(remaining);
+        setRequestCount(10);
+        return;
+      } else if (cooldownEnd && now >= cooldownEnd) {
+        // Cooldown just expired
+        console.log("✅ Cooldown expired - resetting");
+        saveCooldownEndTime(null);
+        saveRequestHistory([]);
+        setRateLimitReached(false);
+        setRateLimitResetIn(0);
+        setRequestCount(0);
+        return;
+      }
+      
+      // Update request count
       let history = getRequestHistory();
       history = cleanOldRequests(history, now);
       saveRequestHistory(history);
+      setRequestCount(history.length);
       
       if (history.length >= 10) {
-        const oldestRequest = Math.min(...history);
-        const resetTime = oldestRequest + 60000;
-        const remaining = Math.max(0, Math.ceil((resetTime - now) / 1000));
-        setRateLimitResetIn(remaining);
+        // This shouldn't happen if cooldown logic is working, but just in case
+        setRateLimitReached(true);
       } else {
         setRateLimitReached(false);
         setRateLimitResetIn(0);

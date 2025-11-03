@@ -48,6 +48,25 @@ const GlobePanelComponent: React.FC<GlobePanelProps> = ({
     controls.enablePan = enableZoom;
     controls.minPolarAngle = 0; // Allow full vertical rotation
     controls.maxPolarAngle = Math.PI; // Allow full vertical rotation
+    
+    // Touch controls configuration for mobile
+    if (enableZoom) {
+      // Configure touch gestures
+      // TWO fingers = PAN (move the globe left/right/up/down)
+      // ONE finger = ROTATE (spin the globe)
+      // PINCH = ZOOM
+      controls.touches = {
+        ONE: 0,  // ROTATE - one finger rotates
+        TWO: 2,  // PAN - two fingers pan
+      };
+      
+      // Desktop mouse controls
+      controls.mouseButtons = {
+        LEFT: 0,    // LEFT mouse button rotates
+        MIDDLE: 1,  // MIDDLE mouse button zooms
+        RIGHT: 2,   // RIGHT mouse button pans
+      };
+    }
 
     // Set initial view to fit full globe comfortably
     try {
