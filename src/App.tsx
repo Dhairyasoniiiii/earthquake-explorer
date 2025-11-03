@@ -152,17 +152,18 @@ const App: React.FC = () => {
    * Refreshes every 10 seconds but caps at 10 requests per minute using a sliding window.
    */
   useEffect(() => {
+    console.log("🚀 App useEffect initialized");
     let cancelled = false;
-    let resetTimer: ReturnType<typeof setTimeout> | undefined;
     let countdownInterval: ReturnType<typeof setInterval>;
-    let hasLoadedData = false; // Track if we've successfully loaded data
+    let fetchInterval: ReturnType<typeof setInterval>;
 
     // Get request timestamps from localStorage
     const getRequestHistory = (): number[] => {
-      const data = localStorage.getItem('earthquakeRequestHistory');
-      if (!data) return [];
       try {
-        return JSON.parse(data);
+        const data = localStorage.getItem('earthquakeRequestHistory');
+        if (!data) return [];
+        const parsed = JSON.parse(data);
+        return Array.isArray(parsed) ? parsed : [];
       } catch {
         return [];
       }
@@ -170,7 +171,11 @@ const App: React.FC = () => {
 
     // Save request timestamps to localStorage
     const saveRequestHistory = (timestamps: number[]) => {
-      localStorage.setItem('earthquakeRequestHistory', JSON.stringify(timestamps));
+      try {
+        localStorage.setItem('earthquakeRequestHistory', JSON.stringify(timestamps));
+      } catch (err) {
+        console.error("Failed to save request history:", err);
+      }
     };
 
     // Clean old requests (older than 60 seconds) from history
@@ -179,109 +184,140 @@ const App: React.FC = () => {
     };
 
     const fetchData = async () => {
+      if (cancelled) {
+        console.log("⏹️ Fetch cancelled - component unmounted");
+        return;
+      }
+
+      console.log("� Starting fetchData");
       const now = Date.now();
       let history = getRequestHistory();
       
       // Remove requests older than 60 seconds
       history = cleanOldRequests(history, now);
+      console.log(`📊 ${history.length} requests in last 60 seconds`);
 
       // Rate limit: max 10 requests in the last 60 seconds
       if (history.length >= 10) {
         const oldestRequest = Math.min(...history);
         const resetTime = oldestRequest + 60000;
         const remaining = Math.ceil((resetTime - now) / 1000);
-        console.warn(`⚠️ Rate limit: ${history.length}/10 requests in last 60s. Oldest expires in ${remaining}s`);
+        console.warn(`⚠️ Rate limited: ${history.length}/10 requests. Resets in ${remaining}s`);
         setRateLimitReached(true);
         setRateLimitResetIn(remaining);
-        saveRequestHistory(history); // Save cleaned history
-        setLoading(false); // Stop loading even if rate limited
-        return; // Don't fetch
+        saveRequestHistory(history);
+        setLoading(false); // Ensure we're not stuck on loading
+        return;
       }
 
-      // Check if this is the very first load (no data yet)
-      const isFirstLoad = !hasLoadedData;
-      
       // Add this request to history
       history.push(now);
       saveRequestHistory(history);
       setRateLimitReached(false);
       setRateLimitResetIn(0);
-      
-      if (isFirstLoad) setLoading(true); // Show loading screen on first fetch
 
       try {
+        console.log("🌐 Fetching from USGS...");
         const res = await fetch(
-          "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_month.csv"
+          "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_month.csv",
+          { 
+            method: 'GET',
+            cache: 'no-cache'
+          }
         );
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        
+        console.log(`📡 Response: ${res.status} ${res.statusText}`);
+        
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        }
+        
         const text = await res.text();
-        if (cancelled) return;
+        console.log(`📄 Received ${text.length} chars`);
+        
+        if (cancelled) {
+          console.log("⏹️ Cancelled after fetch");
+          return;
+        }
+        
         const parsed = parseUSGSCsv(text);
+        console.log(`✅ Parsed ${parsed.length} earthquakes`);
+        
         setEarthquakeData(parsed);
-        hasLoadedData = true; // Mark that we've loaded data
-        console.log(`✓ Fetch #${history.length} complete (${history.length}/10 requests in last 60s)`);
+        console.log(`✓ Data updated - Request ${history.length}/10`);
+        
       } catch (err) {
-        console.error("Failed to fetch earthquake data:", err);
+        console.error("❌ Fetch failed:", err);
+        // On error, still set empty array so app can render
+        if (!cancelled) {
+          setEarthquakeData([]);
+        }
       } finally {
-        setLoading(false); // Always stop loading after fetch attempt
+        if (!cancelled) {
+          console.log("🏁 Clearing loading state");
+          setLoading(false);
+        }
       }
     };
 
-    // Check initial rate limit status
+    // Clean up old localStorage data on mount
+    console.log("🧹 Cleaning stale request history");
     const now = Date.now();
     let initialHistory = getRequestHistory();
-    initialHistory = cleanOldRequests(initialHistory, now);
+    const cleanedHistory = cleanOldRequests(initialHistory, now);
     
-    if (initialHistory.length >= 10) {
-      const oldestRequest = Math.min(...initialHistory);
+    if (cleanedHistory.length !== initialHistory.length) {
+      console.log(`Removed ${initialHistory.length - cleanedHistory.length} stale requests`);
+      saveRequestHistory(cleanedHistory);
+    }
+    
+    // Check if we're rate limited on mount
+    if (cleanedHistory.length >= 10) {
+      const oldestRequest = Math.min(...cleanedHistory);
       const resetTime = oldestRequest + 60000;
       const remaining = Math.ceil((resetTime - now) / 1000);
+      console.warn(`⚠️ Rate limited on mount - ${remaining}s remaining`);
       setRateLimitReached(true);
       setRateLimitResetIn(remaining);
-    } else {
-      setRateLimitReached(false);
-      setRateLimitResetIn(0);
+      setLoading(false); // Don't stay on loading screen if rate limited
     }
 
     // Update countdown every second
     countdownInterval = setInterval(() => {
+      if (cancelled) return;
+      
       const now = Date.now();
       let history = getRequestHistory();
       history = cleanOldRequests(history, now);
+      saveRequestHistory(history);
       
       if (history.length >= 10) {
         const oldestRequest = Math.min(...history);
         const resetTime = oldestRequest + 60000;
         const remaining = Math.max(0, Math.ceil((resetTime - now) / 1000));
         setRateLimitResetIn(remaining);
-        
-        // Don't auto-clear rateLimitReached here - let the next fetch attempt do it
       } else {
-        // If we have less than 10 requests now, we're no longer rate limited
-        if (history.length < 10) {
-          setRateLimitReached(false);
-          setRateLimitResetIn(0);
-        }
+        setRateLimitReached(false);
+        setRateLimitResetIn(0);
       }
-      
-      // Save cleaned history
-      saveRequestHistory(history);
     }, 1000);
 
+    // Initial fetch
+    console.log("⏱️ Scheduling initial fetch");
     fetchData();
     
     // Refresh every 10 seconds
-    const interval = setInterval(() => {
+    fetchInterval = setInterval(() => {
       if (!cancelled) {
         fetchData();
       }
     }, 10000);
 
     return () => {
+      console.log("🛑 Cleaning up intervals");
       cancelled = true;
-      clearInterval(interval);
+      clearInterval(fetchInterval);
       clearInterval(countdownInterval);
-      if (resetTimer) clearTimeout(resetTimer);
     };
   }, []); // Empty deps - only run once on mount
 
