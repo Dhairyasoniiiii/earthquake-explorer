@@ -361,19 +361,21 @@ const App: React.FC = () => {
       setRateLimitResetIn(remaining);
       setRequestCount(10);
       setLoading(false);
+      // IMPORTANT: Don't clean old requests during cooldown!
     } else if (cooldownEnd && now >= cooldownEnd) {
       // Cooldown expired, clean it up
       console.log("Clearing expired cooldown");
       saveCooldownEndTime(null);
       saveRequestHistory([]);
-    }
-    
-    let initialHistory = getRequestHistory();
-    const cleanedHistory = cleanOldRequests(initialHistory, now);
-    
-    if (cleanedHistory.length !== initialHistory.length) {
-      console.log(`Removed ${initialHistory.length - cleanedHistory.length} stale requests`);
-      saveRequestHistory(cleanedHistory);
+    } else {
+      // NOT in cooldown - safe to clean old requests
+      let initialHistory = getRequestHistory();
+      const cleanedHistory = cleanOldRequests(initialHistory, now);
+      
+      if (cleanedHistory.length !== initialHistory.length) {
+        console.log(`Removed ${initialHistory.length - cleanedHistory.length} stale requests`);
+        saveRequestHistory(cleanedHistory);
+      }
     }
 
     // Update countdown every second
