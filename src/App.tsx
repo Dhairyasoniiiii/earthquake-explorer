@@ -148,9 +148,6 @@ const App: React.FC = () => {
   
   // Current request count in the last 60 seconds
   const [requestCount, setRequestCount] = useState<number>(0);
-  
-  // Ref to store the manual refresh function
-  const manualRefreshRef = React.useRef<(() => void) | null>(null);
 
   /**
    * Fetches earthquake data from USGS and sets up auto-refresh.
@@ -430,9 +427,6 @@ const App: React.FC = () => {
     } else {
       console.log("Skipping initial fetch - cooldown active");
     }
-    
-    // Expose manual refresh function
-    manualRefreshRef.current = fetchData;
     
     // Refresh every 10 seconds - but skip if rate limited
     fetchInterval = setInterval(() => {
@@ -891,61 +885,6 @@ const App: React.FC = () => {
                   {requestCount}/10
                 </strong>
               </span>
-              <button
-                onClick={() => {
-                  console.log("Manual refresh clicked!");
-                  console.log("Rate limited:", rateLimitReached);
-                  console.log("Current count:", requestCount);
-                  if (manualRefreshRef.current) {
-                    manualRefreshRef.current();
-                  }
-                }}
-                disabled={rateLimitReached}
-                style={{
-                  background: rateLimitReached
-                    ? "rgba(100, 100, 100, 0.3)"
-                    : "linear-gradient(135deg, #06b6d4, #8b5cf6)",
-                  color: "white",
-                  border: "none",
-                  padding: "8px 16px",
-                  borderRadius: 8,
-                  fontSize: 13,
-                  fontWeight: 600,
-                  cursor: rateLimitReached ? "not-allowed" : "pointer",
-                  boxShadow: rateLimitReached ? "none" : "0 2px 8px rgba(6, 182, 212, 0.3)",
-                  opacity: rateLimitReached ? 0.5 : 1,
-                  transition: "all 0.2s ease"
-                }}
-                title={rateLimitReached ? `Rate limited - wait ${rateLimitResetIn}s` : "Manually refresh data"}
-              >
-                Refresh Now
-              </button>
-              <button
-                onClick={() => {
-                  console.log("Clearing rate limit data...");
-                  localStorage.removeItem('earthquakeRequestHistory');
-                  localStorage.removeItem('earthquakeCooldownEnd');
-                  setRateLimitReached(false);
-                  setRateLimitResetIn(0);
-                  setRequestCount(0);
-                  console.log("Rate limit cleared!");
-                }}
-                style={{
-                  background: "linear-gradient(135deg, #ef4444, #dc2626)",
-                  color: "white",
-                  border: "none",
-                  padding: "8px 16px",
-                  borderRadius: 8,
-                  fontSize: 13,
-                  fontWeight: 600,
-                  cursor: "pointer",
-                  boxShadow: "0 2px 8px rgba(239, 68, 68, 0.3)",
-                  transition: "all 0.2s ease"
-                }}
-                title="Clear rate limit (for testing)"
-              >
-                Reset Limit
-              </button>
             </div>
             
             {/* Filter on the right */}
