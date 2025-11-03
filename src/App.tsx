@@ -155,6 +155,7 @@ const App: React.FC = () => {
     let cancelled = false;
     let resetTimer: ReturnType<typeof setTimeout> | undefined;
     let countdownInterval: ReturnType<typeof setInterval>;
+    let hasLoadedData = false; // Track if we've successfully loaded data
 
     // Get request timestamps from localStorage
     const getRequestHistory = (): number[] => {
@@ -193,17 +194,20 @@ const App: React.FC = () => {
         setRateLimitReached(true);
         setRateLimitResetIn(remaining);
         saveRequestHistory(history); // Save cleaned history
+        setLoading(false); // Stop loading even if rate limited
         return; // Don't fetch
       }
 
+      // Check if this is the very first load (no data yet)
+      const isFirstLoad = !hasLoadedData;
+      
       // Add this request to history
       history.push(now);
       saveRequestHistory(history);
       setRateLimitReached(false);
       setRateLimitResetIn(0);
       
-      const isFirstLoad = history.length === 1;
-      setLoading(isFirstLoad); // Only show loading screen on first fetch
+      if (isFirstLoad) setLoading(true); // Show loading screen on first fetch
 
       try {
         const res = await fetch(
@@ -214,11 +218,12 @@ const App: React.FC = () => {
         if (cancelled) return;
         const parsed = parseUSGSCsv(text);
         setEarthquakeData(parsed);
+        hasLoadedData = true; // Mark that we've loaded data
         console.log(`✓ Fetch #${history.length} complete (${history.length}/10 requests in last 60s)`);
       } catch (err) {
         console.error("Failed to fetch earthquake data:", err);
       } finally {
-        if (!cancelled && isFirstLoad) setLoading(false);
+        setLoading(false); // Always stop loading after fetch attempt
       }
     };
 
