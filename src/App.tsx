@@ -610,7 +610,7 @@ const App: React.FC = () => {
         </div>
       )}
       
-      {loading ? (
+      {loading && !rateLimitReached ? (
         <div
           style={{
             display: "flex",
