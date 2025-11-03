@@ -14,7 +14,7 @@ A modern, interactive web application for visualizing real-time earthquake data 
 
 - [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
-[View Live Application](#) *(Link will be added after Netlify deployment)*
+[View Live Application](https://6908545f65a796cc6053471a--stellular-cucurucho-5ed9f0.netlify.app/)
 
 ## React Compiler
 
