@@ -250,7 +250,7 @@ const App: React.FC = () => {
       clearInterval(interval);
       clearTimeout(resetTimer);
     };
-  }, [rateLimitReached]);
+  }, []); // Empty deps - only run once on mount
 
   /**
    * Converts earthquake data to globe points for 3D visualization.
