@@ -142,6 +142,9 @@ const App: React.FC = () => {
   
   // Tracks if we've hit the API rate limit (10 requests per minute)
   const [rateLimitReached, setRateLimitReached] = useState<boolean>(false);
+  
+  // Time remaining until rate limit resets (in seconds)
+  const [rateLimitResetIn, setRateLimitResetIn] = useState<number>(0);
 
   /**
    * Fetches earthquake data from USGS and sets up auto-refresh.
@@ -150,7 +153,8 @@ const App: React.FC = () => {
    */
   useEffect(() => {
     let cancelled = false;
-    let resetTimer: ReturnType<typeof setTimeout>;
+    let resetTimer: ReturnType<typeof setTimeout> | undefined;
+    let countdownInterval: ReturnType<typeof setInterval>;
 
     // Get rate limit data from localStorage
     const getRateLimitData = () => {
@@ -168,6 +172,14 @@ const App: React.FC = () => {
       localStorage.setItem('earthquakeRefreshLimit', JSON.stringify({ count, resetTime }));
     };
 
+    // Update countdown timer
+    const updateCountdown = () => {
+      const limitData = getRateLimitData();
+      const now = Date.now();
+      const remaining = Math.max(0, Math.ceil((limitData.resetTime - now) / 1000));
+      setRateLimitResetIn(remaining);
+    };
+
     const fetchData = async () => {
       const limitData = getRateLimitData();
       const now = Date.now();
@@ -178,13 +190,14 @@ const App: React.FC = () => {
         limitData.resetTime = now + 60000;
         saveRateLimitData(limitData.count, limitData.resetTime);
         setRateLimitReached(false);
+        setRateLimitResetIn(60);
       }
 
       // Rate limit: max 10 requests per minute
       if (limitData.count >= 10) {
         console.warn("Rate limit reached: Maximum 10 refreshes per minute");
         setRateLimitReached(true);
-        saveRateLimitData(limitData.count, limitData.resetTime);
+        updateCountdown();
         return;
       }
 
@@ -219,36 +232,52 @@ const App: React.FC = () => {
       // Reset if time has passed
       saveRateLimitData(0, now + 60000);
       setRateLimitReached(false);
+      setRateLimitResetIn(0);
     } else if (initialData.count >= 10) {
       setRateLimitReached(true);
+      updateCountdown();
     }
 
-    // Reset rate limit check every 5 seconds
-    const resetCheck = () => {
+    // Update countdown every second when rate limited
+    countdownInterval = setInterval(() => {
       const limitData = getRateLimitData();
       const now = Date.now();
-      if (now >= limitData.resetTime) {
-        console.log("Rate limit window reset");
-        saveRateLimitData(0, now + 60000);
-        setRateLimitReached(false);
+      
+      if (limitData.count >= 10) {
+        updateCountdown();
+        
+        // Check if we can reset
+        if (now >= limitData.resetTime) {
+          console.log("Rate limit window reset - resuming auto-refresh");
+          saveRateLimitData(0, now + 60000);
+          setRateLimitReached(false);
+          setRateLimitResetIn(0);
+          // Trigger immediate fetch after reset
+          fetchData();
+        }
       }
-      resetTimer = setTimeout(resetCheck, 5000);
-    };
-    resetCheck();
+    }, 1000);
 
     fetchData();
     
-    // Refresh every 10 seconds (max 10 per minute)
+    // Refresh every 10 seconds (but only if not rate limited)
     const interval = setInterval(() => {
       if (!cancelled) {
-        fetchData();
+        const limitData = getRateLimitData();
+        const now = Date.now();
+        
+        // Only fetch if we haven't hit the limit or if time has reset
+        if (limitData.count < 10 || now >= limitData.resetTime) {
+          fetchData();
+        }
       }
     }, 10000);
 
     return () => {
       cancelled = true;
       clearInterval(interval);
-      clearTimeout(resetTimer);
+      clearInterval(countdownInterval);
+      if (resetTimer) clearTimeout(resetTimer);
     };
   }, []); // Empty deps - only run once on mount
 
@@ -384,10 +413,13 @@ const App: React.FC = () => {
           }}
         >
           <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>
-            ⚠️ Maximum Refresh Limit Reached
+            ⚠️ Rate Limit Reached
           </div>
           <div style={{ fontSize: 13, opacity: 0.95 }}>
-            The page has reached the maximum refresh limit. Please wait for some time and try again later.
+            Maximum 10 refreshes per minute reached.
+            {rateLimitResetIn > 0 && (
+              <> Resuming in <strong>{rateLimitResetIn}s</strong></>
+            )}
           </div>
         </div>
       )}
