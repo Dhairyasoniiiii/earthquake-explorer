@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, memo } from "react";
 import type { Earthquake } from "../types";
 
 interface DataTableProps {
@@ -8,7 +8,7 @@ interface DataTableProps {
   style?: React.CSSProperties;
 }
 
-const DataTable: React.FC<DataTableProps> = ({
+const DataTableComponent: React.FC<DataTableProps> = ({
   earthquakes,
   selectedEarthquake,
   onSelect,
@@ -93,5 +93,13 @@ const DataTable: React.FC<DataTableProps> = ({
     </div>
   );
 };
+
+// Memoize component to prevent unnecessary re-renders
+const DataTable = memo(DataTableComponent, (prevProps, nextProps) => {
+  return (
+    prevProps.earthquakes.length === nextProps.earthquakes.length &&
+    prevProps.selectedEarthquake?.id === nextProps.selectedEarthquake?.id
+  );
+});
 
 export default DataTable;
