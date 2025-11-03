@@ -393,11 +393,29 @@ const App: React.FC = () => {
     // Expose manual refresh function
     manualRefreshRef.current = fetchData;
     
-    // Refresh every 10 seconds
+    // Refresh every 10 seconds - but skip if rate limited
     fetchInterval = setInterval(() => {
-      if (!cancelled) {
-        fetchData();
+      if (cancelled) return;
+      
+      // Check if we're currently rate limited before attempting auto-refresh
+      const now = Date.now();
+      const cooldownEnd = getCooldownEndTime();
+      
+      // Skip auto-refresh if in cooldown
+      if (cooldownEnd && now < cooldownEnd) {
+        console.log("Auto-refresh skipped - in cooldown period");
+        return;
       }
+      
+      // Check request count
+      const history = cleanOldRequests(getRequestHistory(), now);
+      if (history.length >= 10) {
+        console.log("Auto-refresh skipped - at rate limit");
+        return;
+      }
+      
+      // Safe to auto-refresh
+      fetchData();
     }, 10000);
 
     return () => {
@@ -543,7 +561,7 @@ const App: React.FC = () => {
             Rate Limit Reached
           </div>
           <div style={{ fontSize: 13, opacity: 0.95 }}>
-            Maximum 10 refreshes per minute reached.
+            Maximum 10 refreshes per minute reached. Auto-refresh paused.
             {rateLimitResetIn > 0 && (
               <> Resuming in <strong>{rateLimitResetIn}s</strong></>
             )}
