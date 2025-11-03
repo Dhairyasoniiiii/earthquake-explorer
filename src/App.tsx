@@ -181,26 +181,28 @@ const App: React.FC = () => {
     };
 
     const fetchData = async () => {
-      const limitData = getRateLimitData();
+      let limitData = getRateLimitData();
       const now = Date.now();
 
-      // Reset counter if 1 minute has passed
+      // Check if we need to start a new rate limit window
       if (now >= limitData.resetTime) {
-        limitData.count = 0;
-        limitData.resetTime = now + 60000;
-        saveRateLimitData(limitData.count, limitData.resetTime);
+        console.log("✓ Rate limit window expired - starting fresh");
+        limitData = { count: 0, resetTime: now + 60000 };
+        saveRateLimitData(0, now + 60000);
         setRateLimitReached(false);
         setRateLimitResetIn(60);
       }
 
       // Rate limit: max 10 requests per minute
       if (limitData.count >= 10) {
-        console.warn("Rate limit reached: Maximum 10 refreshes per minute");
+        const remaining = Math.ceil((limitData.resetTime - now) / 1000);
+        console.warn(`⚠️ Rate limit: ${limitData.count}/10 requests used. Resets in ${remaining}s`);
         setRateLimitReached(true);
         updateCountdown();
-        return;
+        return; // Don't fetch
       }
 
+      // Increment counter and save
       limitData.count++;
       saveRateLimitData(limitData.count, limitData.resetTime);
       setRateLimitReached(false);
@@ -217,7 +219,8 @@ const App: React.FC = () => {
         if (cancelled) return;
         const parsed = parseUSGSCsv(text);
         setEarthquakeData(parsed);
-        console.log(`Fetched data - Request ${limitData.count}/10 in current minute`);
+        const remaining = Math.ceil((limitData.resetTime - Date.now()) / 1000);
+        console.log(`✓ Fetch #${limitData.count}/10 complete (window resets in ${remaining}s)`);
       } catch (err) {
         console.error("Failed to fetch earthquake data:", err);
       } finally {
@@ -238,22 +241,22 @@ const App: React.FC = () => {
       updateCountdown();
     }
 
-    // Update countdown every second when rate limited
+    // Update countdown every second
     countdownInterval = setInterval(() => {
       const limitData = getRateLimitData();
       const now = Date.now();
       
+      // Always update countdown if we're rate limited
       if (limitData.count >= 10) {
-        updateCountdown();
+        const remaining = Math.max(0, Math.ceil((limitData.resetTime - now) / 1000));
+        setRateLimitResetIn(remaining);
         
-        // Check if we can reset
+        // Check if window has expired - if so, reset and allow fetching
         if (now >= limitData.resetTime) {
-          console.log("Rate limit window reset - resuming auto-refresh");
+          console.log("✓ Rate limit window expired - auto-resetting");
           saveRateLimitData(0, now + 60000);
           setRateLimitReached(false);
           setRateLimitResetIn(0);
-          // Trigger immediate fetch after reset
-          fetchData();
         }
       }
     }, 1000);
