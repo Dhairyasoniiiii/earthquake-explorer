@@ -145,6 +145,12 @@ const App: React.FC = () => {
   
   // Time remaining until rate limit resets (in seconds)
   const [rateLimitResetIn, setRateLimitResetIn] = useState<number>(0);
+  
+  // Current request count in the last 60 seconds
+  const [requestCount, setRequestCount] = useState<number>(0);
+  
+  // Ref to store the manual refresh function
+  const manualRefreshRef = React.useRef<(() => void) | null>(null);
 
   /**
    * Fetches earthquake data from USGS and sets up auto-refresh.
@@ -196,6 +202,9 @@ const App: React.FC = () => {
       // Remove requests older than 60 seconds
       history = cleanOldRequests(history, now);
       console.log(`📊 ${history.length} requests in last 60 seconds`);
+      
+      // Update request count state for UI display
+      setRequestCount(history.length);
 
       // Rate limit: max 10 requests in the last 60 seconds
       if (history.length >= 10) {
@@ -305,6 +314,9 @@ const App: React.FC = () => {
     // Initial fetch
     console.log("⏱️ Scheduling initial fetch");
     fetchData();
+    
+    // Expose manual refresh function
+    manualRefreshRef.current = fetchData;
     
     // Refresh every 10 seconds
     fetchInterval = setInterval(() => {
@@ -727,6 +739,50 @@ const App: React.FC = () => {
               }}>
                 Avg Mag: <strong style={{ color: "#ec4899" }}>{stats.avgMag.toFixed(1)}</strong>
               </span>
+              <span style={{ 
+                background: rateLimitReached 
+                  ? "linear-gradient(135deg, rgba(255, 59, 48, 0.3), rgba(255, 59, 48, 0.2))"
+                  : "linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(34, 197, 94, 0.1))", 
+                padding: "8px 14px", 
+                borderRadius: 8, 
+                fontSize: 13,
+                border: rateLimitReached 
+                  ? "1px solid rgba(255, 59, 48, 0.4)"
+                  : "1px solid rgba(34, 197, 94, 0.3)",
+                boxShadow: rateLimitReached
+                  ? "0 2px 8px rgba(255, 59, 48, 0.3)"
+                  : "0 2px 8px rgba(34, 197, 94, 0.2)"
+              }}>
+                Requests: <strong style={{ color: rateLimitReached ? "#ff3b30" : "#22c55e" }}>
+                  {requestCount}/10
+                </strong>
+              </span>
+              <button
+                onClick={() => {
+                  if (manualRefreshRef.current) {
+                    manualRefreshRef.current();
+                  }
+                }}
+                disabled={rateLimitReached}
+                style={{
+                  background: rateLimitReached
+                    ? "rgba(100, 100, 100, 0.3)"
+                    : "linear-gradient(135deg, #06b6d4, #8b5cf6)",
+                  color: "white",
+                  border: "none",
+                  padding: "8px 16px",
+                  borderRadius: 8,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: rateLimitReached ? "not-allowed" : "pointer",
+                  boxShadow: rateLimitReached ? "none" : "0 2px 8px rgba(6, 182, 212, 0.3)",
+                  opacity: rateLimitReached ? 0.5 : 1,
+                  transition: "all 0.2s ease"
+                }}
+                title={rateLimitReached ? `Rate limited - wait ${rateLimitResetIn}s` : "Manually refresh data"}
+              >
+                🔄 Refresh Now
+              </button>
             </div>
             
             {/* Filter on the right */}
