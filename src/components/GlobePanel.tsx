@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, memo } from "react";
+import React, { memo, useEffect, useMemo, useRef, useState } from "react";
 import Globe from "react-globe.gl";
 
 export interface GlobePoint {
@@ -8,117 +8,77 @@ export interface GlobePoint {
   altitude?: number;
   color?: string;
   label?: string;
-  [key: string]: any;
 }
 
 interface GlobePanelProps {
   pointsData: GlobePoint[];
   height?: number | string;
-  onPointClick?: (p: GlobePoint) => void;
+  onPointClick?: (point: GlobePoint) => void;
   altitudeField?: string;
   enableZoom?: boolean;
   pointRadius?: number;
 }
 
 const GlobePanelComponent: React.FC<GlobePanelProps> = ({
-  pointsData,
-  onPointClick,
-  altitudeField = "altitude",
-  height = 400,
-  enableZoom = true,
-  pointRadius = 0.3,
+  pointsData, onPointClick, altitudeField = "altitude", height = "100%", enableZoom = true, pointRadius = 0.24,
 }) => {
   const globeRef = useRef<any>(null);
-  const maxAltitudeRef = useRef<number>(1);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [size, setSize] = useState({ width: 0, height: 0 });
+  const maxAltitude = useMemo(() => pointsData.reduce((max, point) => {
+    const value = point[altitudeField as keyof GlobePoint];
+    return typeof value === "number" && Number.isFinite(value) ? Math.max(max, Math.abs(value)) : max;
+  }, 1), [pointsData, altitudeField]);
 
-  // Memoize max altitude calculation
   useEffect(() => {
-    const newMax = Math.max(...pointsData.map((p) => p[altitudeField] || 1), 1) || 1;
-    maxAltitudeRef.current = newMax;
-  }, [pointsData, altitudeField]);
+    const container = containerRef.current;
+    if (!container) return;
+    const observer = new ResizeObserver(([entry]) => {
+      const { width, height: observedHeight } = entry.contentRect;
+      setSize({ width: Math.floor(width), height: Math.floor(observedHeight) });
+    });
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
-    if (!globeRef.current) return;
-    const controls = globeRef.current.controls();
-    // Inline: rotate slowly, no zoom/pan; Modal: user can zoom/pan
+    const controls = globeRef.current?.controls?.();
+    if (!controls) return;
     controls.autoRotate = !enableZoom;
-    controls.autoRotateSpeed = 0.35;
+    controls.autoRotateSpeed = 0.3;
     controls.enableDamping = true;
     controls.enableZoom = enableZoom;
     controls.enablePan = enableZoom;
-    controls.minPolarAngle = 0; // Allow full vertical rotation
-    controls.maxPolarAngle = Math.PI; // Allow full vertical rotation
-    
-    // Touch controls configuration for mobile
-    if (enableZoom) {
-      // Configure touch gestures
-      // TWO fingers = PAN (move the globe left/right/up/down)
-      // ONE finger = ROTATE (spin the globe)
-      // PINCH = ZOOM
-      controls.touches = {
-        ONE: 0,  // ROTATE - one finger rotates
-        TWO: 2,  // PAN - two fingers pan
-      };
-      
-      // Desktop mouse controls
-      controls.mouseButtons = {
-        LEFT: 0,    // LEFT mouse button rotates
-        MIDDLE: 1,  // MIDDLE mouse button zooms
-        RIGHT: 2,   // RIGHT mouse button pans
-      };
-    }
-
-    // Set initial view to fit full globe comfortably
-    try {
-      const altitude = enableZoom ? 2.4 : 5.0; // 70% smaller total (30% + 20% + 20% more)
-      globeRef.current.pointOfView({ altitude, lat: 0, lng: 0 }, 0);
-    } catch {}
+    if (!globeRef.current.pointOfView) return;
+    globeRef.current.pointOfView({ altitude: enableZoom ? 2.2 : 2.5, lat: 12, lng: 0 }, 500);
   }, [enableZoom]);
 
-  return (
-    <div style={{ 
-      height, 
-      width: "100%",
-      position: "relative", 
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-    }}>
-      <Globe
-        ref={globeRef}
-        width={typeof height === "number" ? height : undefined}
-        height={typeof height === "number" ? height : undefined}
-        globeImageUrl="//unpkg.com/three-globe/example/img/earth-blue-marble.jpg"
-        bumpImageUrl="//unpkg.com/three-globe/example/img/earth-topology.png"
-        backgroundColor="rgba(0,0,0,0)"
-        showAtmosphere
-        atmosphereColor="lightskyblue"
-        atmosphereAltitude={0.15}
-        pointsData={pointsData}
-        pointLat={(d: any) => d.lat}
-        pointLng={(d: any) => d.lng}
-        pointAltitude={(d: any) => {
-          const val = d[altitudeField];
-          if (typeof val !== "number" || isNaN(val)) return 0.01;
-          return Math.min(0.15, Math.max(0.01, (val / maxAltitudeRef.current) * 0.15));
-        }}
-        pointColor={(d: any) => d.color || "orange"}
-        pointRadius={pointRadius}
-        onPointClick={(d: any) => onPointClick?.(d as GlobePoint)}
-      />
-    </div>
-  );
+  return <div className="globe-canvas" ref={containerRef} style={{ height, width: "100%" }}>
+    {size.width > 0 && size.height > 0 && <Globe
+      ref={globeRef}
+      width={size.width}
+      height={size.height}
+      globeImageUrl="https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg"
+      bumpImageUrl="https://unpkg.com/three-globe/example/img/earth-topology.png"
+      backgroundColor="rgba(0,0,0,0)"
+      showAtmosphere
+      atmosphereColor="#67d9d0"
+      atmosphereAltitude={0.12}
+      pointsData={pointsData}
+      pointLat={(raw: object) => (raw as GlobePoint).lat}
+      pointLng={(raw: object) => (raw as GlobePoint).lng}
+      pointAltitude={(raw: object) => {
+        const point = raw as GlobePoint;
+        const value = point[altitudeField as keyof GlobePoint];
+        if (typeof value !== "number" || !Number.isFinite(value)) return 0.01;
+        return Math.max(0.008, Math.min(0.12, Math.abs(value / maxAltitude) * 0.12));
+      }}
+      pointColor={(raw: object) => (raw as GlobePoint).color ?? "#67d9d0"}
+      pointRadius={pointRadius}
+      pointLabel={(raw: object) => (raw as GlobePoint).label ?? "Earthquake"}
+      onPointClick={(raw: object) => onPointClick?.(raw as GlobePoint)}
+    />}
+  </div>;
 };
 
-// Memoize component to prevent unnecessary re-renders
-export const GlobePanel = memo(GlobePanelComponent, (prevProps, nextProps) => {
-  // Only re-render if these props actually changed
-  return (
-    prevProps.pointsData.length === nextProps.pointsData.length &&
-    prevProps.altitudeField === nextProps.altitudeField &&
-    prevProps.enableZoom === nextProps.enableZoom &&
-    prevProps.pointRadius === nextProps.pointRadius &&
-    prevProps.height === nextProps.height
-  );
-});
-
+export const GlobePanel = memo(GlobePanelComponent);
