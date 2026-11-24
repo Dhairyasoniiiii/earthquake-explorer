@@ -51,7 +51,7 @@ const GlobePanelComponent: React.FC<GlobePanelProps> = ({
     controls.enablePan = enableZoom;
     if (!globeRef.current.pointOfView) return;
     globeRef.current.pointOfView({ altitude: enableZoom ? 2.2 : 2.5, lat: 12, lng: 0 }, 500);
-  }, [enableZoom]);
+  }, [enableZoom, size.width, size.height]);
 
   return <div className="globe-canvas" ref={containerRef} style={{ height, width: "100%" }}>
     {size.width > 0 && size.height > 0 && <Globe
@@ -82,3 +82,4 @@ const GlobePanelComponent: React.FC<GlobePanelProps> = ({
 };
 
 export const GlobePanel = memo(GlobePanelComponent);
+
