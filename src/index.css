@@ -221,16 +221,27 @@ body { height: 100dvh; }
 .stats-under-table .stat-card strong { font-size: clamp(15px, 1.65vw, 21px); }
 .event-detail { display: none; }
 .chart-controls label { white-space: nowrap; }
-.glass-panel { background: linear-gradient(145deg, rgba(17, 39, 53, .68), rgba(10, 24, 37, .62)); backdrop-filter: blur(22px) saturate(125%); -webkit-backdrop-filter: blur(22px) saturate(125%); }
+.glass-panel { background: linear-gradient(145deg, rgba(20, 48, 65, .34), rgba(10, 23, 38, .25)); border-color: transparent; box-shadow: 0 18px 50px rgba(0, 0, 0, .16), inset 0 1px 0 rgba(255,255,255,.035), 0 0 32px rgba(94, 212, 220, .035); backdrop-filter: blur(17px) saturate(155%); -webkit-backdrop-filter: blur(17px) saturate(155%); }
 .toolbar, .panel, .stat-card { animation: panel-arrive .55s cubic-bezier(.2,.75,.25,1) both; }
 .seismic-atmosphere { position: fixed; z-index: 0; inset: 0; overflow: hidden; pointer-events: none; background: radial-gradient(ellipse at 22% 44%, rgba(8, 76, 91, .3), transparent 35%), radial-gradient(ellipse at 78% 22%, rgba(55, 48, 113, .24), transparent 38%), linear-gradient(145deg, #06121d 5%, #07101b 55%, #0a1622); }
-.seismic-atmosphere::before { content: ""; position: absolute; inset: -15%; opacity: .7; background-image: radial-gradient(circle, rgba(186,238,245,.72) 0 1px, transparent 1.5px), radial-gradient(circle, rgba(99,226,215,.5) 0 1px, transparent 1.5px); background-size: 97px 97px, 157px 157px; background-position: 0 0, 41px 63px; mask-image: linear-gradient(110deg, transparent 5%, #000 37%, #000 72%, transparent 96%); animation: star-drift 44s linear infinite; }
-.seismic-atmosphere::after { content: ""; position: absolute; width: min(70vw, 900px); aspect-ratio: 1; left: 53%; top: 52%; border: 1px solid rgba(103,217,208,.12); border-radius: 50%; box-shadow: 0 0 80px rgba(41,190,184,.08), inset 0 0 90px rgba(41,190,184,.06); transform: translate(-50%,-50%); animation: planet-breathe 12s ease-in-out infinite; }
-.seismic-wave { position: absolute; left: 53%; top: 52%; width: min(38vw, 480px); aspect-ratio: 1; border: 1px solid rgba(97,223,212,.14); border-radius: 50%; box-shadow: 0 0 50px rgba(72,211,202,.06), inset 0 0 40px rgba(72,211,202,.04); transform: translate(-50%,-50%); animation: seismic-pulse 9s ease-out infinite; }
+.seismic-atmosphere::before { content: ""; position: absolute; inset: -15%; opacity: .86; background-image: radial-gradient(circle, rgba(205,246,255,.84) 0 1px, transparent 1.5px), radial-gradient(circle, rgba(99,226,215,.68) 0 1px, transparent 1.5px); background-size: 97px 97px, 157px 157px; background-position: 0 0, 41px 63px; mask-image: linear-gradient(110deg, transparent 5%, #000 28%, #000 84%, transparent 96%); animation: star-drift 38s linear infinite, star-twinkle 7s ease-in-out infinite alternate; }
+.seismic-atmosphere::after { content: ""; position: absolute; width: min(70vw, 900px); aspect-ratio: 1; left: 53%; top: 52%; border: 1px solid rgba(103,217,208,.2); border-radius: 50%; box-shadow: 0 0 100px rgba(41,190,184,.14), inset 0 0 110px rgba(41,190,184,.1); transform: translate(-50%,-50%); animation: planet-breathe 12s ease-in-out infinite; }
+.aurora-haze { position: absolute; inset: -28%; opacity: .94; filter: blur(58px); background: radial-gradient(ellipse 38% 24% at 20% 35%, rgba(63,211,202,.34), transparent 75%), radial-gradient(ellipse 36% 27% at 76% 28%, rgba(143,123,255,.31), transparent 74%), radial-gradient(ellipse 35% 22% at 57% 78%, rgba(60,167,220,.25), transparent 75%); transform: translate3d(0,0,0) rotate(-8deg); animation: aurora-drift 24s ease-in-out infinite alternate; }
+.seismic-wave { position: absolute; left: 53%; top: 52%; width: min(38vw, 480px); aspect-ratio: 1; border: 1px solid rgba(112,239,231,.27); border-radius: 50%; box-shadow: 0 0 75px rgba(72,211,202,.13), inset 0 0 55px rgba(72,211,202,.1); transform: translate(-50%,-50%); animation: seismic-pulse 8s ease-out infinite; }
 .seismic-wave-two { width: min(52vw, 660px); border-color: rgba(124,150,255,.12); animation-delay: -4.5s; }
-.signal-sweep { position: absolute; left: -10%; right: -10%; top: 55%; height: 1px; opacity: .55; background: linear-gradient(90deg, transparent, rgba(76,225,213,.05) 18%, rgba(76,225,213,.55) 50%, rgba(118,146,255,.12) 76%, transparent); filter: drop-shadow(0 0 8px rgba(69,220,209,.8)); transform-origin: 50% 50%; animation: signal-scan 14s ease-in-out infinite; }
+.signal-sweep { position: absolute; left: -10%; right: -10%; top: 55%; height: 2px; opacity: .72; background: linear-gradient(90deg, transparent, rgba(76,225,213,.12) 18%, rgba(135,250,239,.8) 50%, rgba(143,147,255,.28) 76%, transparent); filter: drop-shadow(0 0 10px rgba(69,220,209,.92)); transform-origin: 50% 50%; animation: signal-scan 11s ease-in-out infinite; }
+.panel.glass-panel { position: relative; isolation: isolate; }
+.panel.glass-panel::after { content: ""; position: absolute; z-index: 0; inset: -35%; pointer-events: none; opacity: .65; background: linear-gradient(112deg, transparent 37%, rgba(130,231,235,.035) 46%, rgba(192,228,255,.12) 50%, rgba(158,145,255,.045) 55%, transparent 64%); background-size: 220% 100%; animation: glass-shimmer 16s ease-in-out infinite; }
+.panel-heading, .chart-frame, .globe-frame, .table-frame, .stats-under-table { position: relative; z-index: 1; }
+.stats-under-table .stat-card { position: relative; isolation: isolate; background: linear-gradient(145deg, rgba(23, 49, 67, .3), rgba(10, 23, 38, .24)); }
+.stats-under-table .stat-card > * { position: relative; z-index: 1; }
+.stats-under-table .stat-card::after { content: ""; position: absolute; z-index: 0; inset: 0; pointer-events: none; background: radial-gradient(ellipse at 0% 0%, rgba(103,217,208,.1), transparent 68%); opacity: .75; animation: stat-glow 8s ease-in-out infinite alternate; }
 .event-toast-backdrop { background: rgba(3, 9, 17, .68); backdrop-filter: blur(30px) saturate(75%); -webkit-backdrop-filter: blur(30px) saturate(75%); }
 @keyframes star-drift { to { background-position: 97px 97px, -116px 220px; } }
+@keyframes star-twinkle { from { opacity: .55; } to { opacity: .96; } }
+@keyframes aurora-drift { from { transform: translate3d(-5%, -2%, 0) rotate(-11deg) scale(1); } to { transform: translate3d(6%, 4%, 0) rotate(10deg) scale(1.12); } }
+@keyframes glass-shimmer { 0%, 18% { background-position: 140% 0; opacity: .15; } 54% { opacity: .8; } 82%, 100% { background-position: -40% 0; opacity: .25; } }
+@keyframes stat-glow { from { opacity: .35; } to { opacity: .95; } }
 @keyframes planet-breathe { 50% { transform: translate(-50%,-50%) scale(1.035); opacity: .62; } }
 @keyframes seismic-pulse { 0% { transform: translate(-50%,-50%) scale(.78); opacity: 0; } 18% { opacity: .7; } 75%,100% { transform: translate(-50%,-50%) scale(1.28); opacity: 0; } }
 @keyframes signal-scan { 0%,100% { transform: translateY(-19vh) rotate(-8deg); opacity: .08; } 48% { transform: translateY(12vh) rotate(5deg); opacity: .58; } }
@@ -275,5 +286,6 @@ body { height: 100dvh; }
   .event-link { max-width: 64px; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .seismic-atmosphere::before, .seismic-atmosphere::after, .seismic-wave, .signal-sweep { animation: none !important; }
+  .seismic-atmosphere::before, .seismic-atmosphere::after, .aurora-haze, .seismic-wave, .signal-sweep, .panel.glass-panel::after, .stats-under-table .stat-card::after { animation: none !important; }
 }
+
