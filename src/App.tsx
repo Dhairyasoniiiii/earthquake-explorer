@@ -183,7 +183,7 @@ const App: React.FC = () => {
 
   return (
     <main className="app-shell">
-      <div className="seismic-atmosphere" aria-hidden="true"><span className="seismic-wave seismic-wave-one" /><span className="seismic-wave seismic-wave-two" /><span className="signal-sweep" /></div>
+      <div className="seismic-atmosphere" aria-hidden="true"><span className="aurora-haze" /><span className="seismic-wave seismic-wave-one" /><span className="seismic-wave seismic-wave-two" /><span className="signal-sweep" /></div>
       {error && <div className="notice" role="status">{earthquakes.length ? `Refresh failed: ${error}. Showing the last successful update.` : `Could not load earthquake data: ${error}`}</div>}
 
       <section className="toolbar glass-panel" aria-label="View controls">
@@ -209,4 +209,5 @@ const App: React.FC = () => {
 };
 
 export default App;
+
 
