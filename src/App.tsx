@@ -90,6 +90,7 @@ const App: React.FC = () => {
   const [earthquakes, setEarthquakes] = useState<Earthquake[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [minimumMagnitude, setMinimumMagnitude] = useState(0);
+  const [placeQuery, setPlaceQuery] = useState("");
   const [heightField, setHeightField] = useState<Field>("magnitude");
   const [colorField, setColorField] = useState<Field>("magnitude");
   const [globeOpen, setGlobeOpen] = useState(false);
@@ -97,6 +98,12 @@ const App: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [updatedAt, setUpdatedAt] = useState<number | null>(null);
+  const [clockTime, setClockTime] = useState(() => Date.now());
+
+  useEffect(() => {
+    const interval = window.setInterval(() => setClockTime(Date.now()), 1_000);
+    return () => window.clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -132,9 +139,10 @@ const App: React.FC = () => {
     };
   }, []);
 
+  const normalizedPlaceQuery = placeQuery.trim().toLocaleLowerCase();
   const filtered = useMemo(
-    () => earthquakes.filter((eq) => eq.magnitude >= minimumMagnitude),
-    [earthquakes, minimumMagnitude],
+    () => earthquakes.filter((eq) => eq.magnitude >= minimumMagnitude && eq.place.toLocaleLowerCase().includes(normalizedPlaceQuery)),
+    [earthquakes, minimumMagnitude, normalizedPlaceQuery],
   );
   const selected = filtered.find((eq) => eq.id === selectedId) ?? null;
   const stats = useMemo(() => ({
@@ -187,8 +195,9 @@ const App: React.FC = () => {
       {error && <div className="notice" role="status">{earthquakes.length ? `Refresh failed: ${error}. Showing the last successful update.` : `Could not load earthquake data: ${error}`}</div>}
 
       <section className="toolbar glass-panel" aria-label="View controls">
-        <div className="feed-status"><span className="live-dot" />{updatedAt ? `Live · ${new Date(updatedAt).toLocaleTimeString()}` : loading ? "Loading feed" : "Waiting for data"}</div>
+        <div className="feed-status"><span className="live-dot" />{updatedAt ? `Live · ${new Date(clockTime).toLocaleTimeString()}` : loading ? "Loading feed" : "Waiting for data"}</div>
         <label className="filter-control"><span>Magnitude <b>{minimumMagnitude.toFixed(1)}+</b></span><input type="range" min="0" max="8" step="0.1" value={minimumMagnitude} onChange={(event) => setMinimumMagnitude(Number(event.target.value))} /></label>
+        <label className="place-search-control"><span>Search place</span><input type="search" value={placeQuery} onChange={(event) => setPlaceQuery(event.target.value)} placeholder="Find a location…" aria-label="Search earthquake place" /></label>
         <label className="select-control"><span>Globe height</span><select value={heightField} onChange={(event) => setHeightField(event.target.value as Field)}>{Object.entries(fieldLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
         <label className="select-control"><span>Point color</span><select value={colorField} onChange={(event) => setColorField(event.target.value as Field)}>{Object.entries(fieldLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
       </section>

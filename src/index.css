@@ -320,3 +320,11 @@ body { height: 100dvh; }
   .glass-panel::before { animation: none !important; }
 }
 
+.place-search-control { flex: 0 1 225px; min-width: 145px; max-width: 280px; display: grid; gap: 4px; color: #8fa6b3; font-size: 10px; }
+.place-search-control input { width: 100%; min-height: 32px; padding: 5px 11px; border: 1px solid rgba(192, 216, 231, .1); border-radius: 9px; outline: none; background: rgba(5, 17, 26, .32); color: #eaf2f6; font-size: 11px; transition: background-color .2s ease, border-color .2s ease, box-shadow .2s ease; }
+.place-search-control input::placeholder { color: #6f8795; }
+.place-search-control input:focus { border-color: rgba(117, 222, 212, .3); background: rgba(5, 17, 26, .48); box-shadow: 0 0 18px rgba(117, 222, 212, .08); }
+@media (max-width: 980px) { .place-search-control { flex: 1 1 145px; min-width: 130px; } }
+@media (max-width: 700px) { .place-search-control { flex: 1 1 125px; min-width: 112px; gap: 2px; font-size: 8px; } .place-search-control input { min-height: 25px; padding: 3px 7px; font-size: 9px; } }
+@media (max-width: 380px) { .place-search-control { flex: 1 1 110px; min-width: 100px; } }
+
