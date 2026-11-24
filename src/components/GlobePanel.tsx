@@ -75,6 +75,8 @@ const GlobePanelComponent: React.FC<GlobePanelProps> = ({
       }}
       pointColor={(raw: object) => (raw as GlobePoint).color ?? "#67d9d0"}
       pointRadius={pointRadius}
+      pointResolution={4}
+      pointsTransitionDuration={0}
       pointLabel={(raw: object) => (raw as GlobePoint).label ?? "Earthquake"}
       onPointClick={(raw: object) => onPointClick?.(raw as GlobePoint)}
     />}

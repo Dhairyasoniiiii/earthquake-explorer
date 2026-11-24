@@ -26,6 +26,7 @@ const numericOptions: Array<{ key: keyof Earthquake; label: string }> = [
   { key: "magError", label: "Magnitude error" }, { key: "magNst", label: "Magnitude stations" },
 ];
 const timeOption = { key: "time" as const, label: "Time" };
+const MAX_CHART_POINTS = 1_000;
 const numberOrNull = (value: unknown) => typeof value === "number" && Number.isFinite(value) ? value : null;
 
 const ChartPanelComponent: React.FC<ChartPanelProps> = ({ earthquakes, onSelect }) => {
@@ -34,7 +35,7 @@ const ChartPanelComponent: React.FC<ChartPanelProps> = ({ earthquakes, onSelect 
   const options = useMemo(() => [timeOption, ...numericOptions], []);
   const chartData = useMemo(() => earthquakes
     .filter((event) => Number.isFinite(event.time) && Number.isFinite(event.magnitude))
-    .slice(0, 2000)
+    .slice(0, MAX_CHART_POINTS)
     .sort((a, b) => a.time - b.time), [earthquakes]);
   const scatterData = useMemo(() => chartData.filter((event) =>
     numberOrNull(event[xKey]) !== null && numberOrNull(event[yKey]) !== null), [chartData, xKey, yKey]);
