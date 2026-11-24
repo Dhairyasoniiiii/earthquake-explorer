@@ -183,25 +183,12 @@ const App: React.FC = () => {
 
   return (
     <main className="app-shell">
-      <header className="topbar glass-panel">
-        <a className="brand" href="#top" aria-label="Quake Atlas home">
-          <span className="brand-mark" aria-hidden="true">Q</span>
-          <span><strong>Quake Atlas</strong><small>Global seismic activity</small></span>
-        </a>
-        <div className="live-status"><span className="live-dot" /> Live USGS feed <span className="status-divider">·</span> {updatedAt ? `Updated ${new Date(updatedAt).toLocaleTimeString()}` : loading ? "Loading feed" : "Waiting for data"}</div>
-      </header>
-
+      <div className="seismic-atmosphere" aria-hidden="true"><span className="seismic-wave seismic-wave-one" /><span className="seismic-wave seismic-wave-two" /><span className="signal-sweep" /></div>
       {error && <div className="notice" role="status">{earthquakes.length ? `Refresh failed: ${error}. Showing the last successful update.` : `Could not load earthquake data: ${error}`}</div>}
 
-      <section className="summary-row" aria-label="Earthquake summary">
-        <div className="summary-copy"><span className="eyebrow">LAST 30 DAYS</span><h1>Earthquake activity</h1><p>Explore recent seismic events across the globe.</p></div>
-        <div className="stat-card glass-panel"><span>Events</span><strong>{stats.count.toLocaleString()}</strong></div>
-        <div className="stat-card glass-panel"><span>Strongest</span><strong>{stats.strongest.toFixed(1)} <i>M</i></strong></div>
-        <div className="stat-card glass-panel"><span>Average</span><strong>{stats.average.toFixed(1)} <i>M</i></strong></div>
-      </section>
-
       <section className="toolbar glass-panel" aria-label="View controls">
-        <label className="filter-control"><span>Minimum magnitude <b>{minimumMagnitude.toFixed(1)}+</b></span><input type="range" min="0" max="8" step="0.1" value={minimumMagnitude} onChange={(event) => setMinimumMagnitude(Number(event.target.value))} /></label>
+        <div className="feed-status"><span className="live-dot" />{updatedAt ? `Live · ${new Date(updatedAt).toLocaleTimeString()}` : loading ? "Loading feed" : "Waiting for data"}</div>
+        <label className="filter-control"><span>Magnitude <b>{minimumMagnitude.toFixed(1)}+</b></span><input type="range" min="0" max="8" step="0.1" value={minimumMagnitude} onChange={(event) => setMinimumMagnitude(Number(event.target.value))} /></label>
         <label className="select-control"><span>Globe height</span><select value={heightField} onChange={(event) => setHeightField(event.target.value as Field)}>{Object.entries(fieldLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
         <label className="select-control"><span>Point color</span><select value={colorField} onChange={(event) => setColorField(event.target.value as Field)}>{Object.entries(fieldLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
       </section>
@@ -212,7 +199,7 @@ const App: React.FC = () => {
           <section className="panel glass-panel globe-panel"><div className="panel-heading"><div><span className="eyebrow">WORLD VIEW</span><h2>Epicenters</h2></div><span className="panel-meta">{points.length.toLocaleString()} of {filtered.length.toLocaleString()}</span><button className="quiet-button" onClick={() => setGlobeOpen(true)}>Expand globe <span aria-hidden="true">↗</span></button></div><div className="globe-frame"><GlobePanel pointsData={points} altitudeField="altitude" onPointClick={(point) => { const event = filtered.find((row) => row.id === point.id); if (event) selectEvent(event); }} height="100%" enableZoom={false} /></div></section>
         </div>
 
-        <aside className="panel glass-panel events-panel"><div className="panel-heading"><div><span className="eyebrow">RECENT EVENTS</span><h2>Earthquakes</h2></div><span className="panel-meta">{filtered.length.toLocaleString()}</span></div><div className="table-frame">{loading && !earthquakes.length ? <div className="empty-state"><span className="loader" />Loading USGS data…</div> : filtered.length ? <DataTable earthquakes={filtered} selectedEarthquake={selected} onSelect={selectEvent} /> : <div className="empty-state">No events match this magnitude.</div>}</div>{selected && <div className="event-detail"><span className="eyebrow">SELECTED EVENT</span><strong>{selected.place}</strong><div className="detail-grid"><span>Magnitude <b>{selected.magnitude.toFixed(1)}</b></span><span>Depth <b>{selected.depth.toFixed(1)} km</b></span><span>Time <b>{new Date(selected.time).toLocaleString()}</b></span><span>Coordinates <b>{selected.lat.toFixed(2)}, {selected.lng.toFixed(2)}</b></span></div></div>}</aside>
+        <aside className="panel glass-panel events-panel"><div className="panel-heading"><div><span className="eyebrow">LIVE FEED</span><h2>Earthquakes</h2></div><span className="panel-meta">{filtered.length.toLocaleString()}</span></div><div className="table-frame">{loading && !earthquakes.length ? <div className="empty-state"><span className="loader" />Loading USGS data…</div> : filtered.length ? <DataTable earthquakes={filtered} selectedEarthquake={selected} onSelect={selectEvent} /> : <div className="empty-state">No events match this magnitude.</div>}</div><section className="stats-under-table" aria-label="Earthquake summary"><div className="stat-card glass-panel"><span>Events</span><strong>{stats.count.toLocaleString()}</strong></div><div className="stat-card glass-panel"><span>Strongest magnitude</span><strong>{stats.strongest.toFixed(1)} <i>M</i></strong></div><div className="stat-card glass-panel"><span>Average magnitude</span><strong>{stats.average.toFixed(1)} <i>M</i></strong></div></section></aside>
       </section>
 
       {globeOpen && <div className="modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setGlobeOpen(false); }}><section className="globe-dialog glass-panel" role="dialog" aria-modal="true" aria-labelledby="globe-title"><div className="panel-heading"><div><span className="eyebrow">WORLD VIEW</span><h2 id="globe-title">Epicenters</h2></div><button className="quiet-button" autoFocus onClick={() => setGlobeOpen(false)} aria-label="Close globe">Close <span aria-hidden="true">×</span></button></div><div className="globe-frame"><GlobePanel pointsData={points} altitudeField="altitude" onPointClick={(point) => { const event = filtered.find((row) => row.id === point.id); if (event) selectEvent(event); setGlobeOpen(false); }} height="100%" enableZoom /></div></section></div>}
@@ -222,5 +209,4 @@ const App: React.FC = () => {
 };
 
 export default App;
-
 
