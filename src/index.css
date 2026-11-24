@@ -289,3 +289,34 @@ body { height: 100dvh; }
   .seismic-atmosphere::before, .seismic-atmosphere::after, .aurora-haze, .seismic-wave, .signal-sweep, .panel.glass-panel::after, .stats-under-table .stat-card::after { animation: none !important; }
 }
 
+/* Let the ambient aurora gently travel across every glass surface. */
+.glass-panel { position: relative; isolation: isolate; overflow: hidden; border-color: transparent; }
+.glass-panel::before { content: ""; position: absolute; z-index: 0; inset: 0; pointer-events: none; opacity: .4; mix-blend-mode: screen; background: radial-gradient(ellipse 68% 140% at 4% 48%, rgba(76, 225, 213, .13), transparent 62%), radial-gradient(ellipse 62% 130% at 96% 50%, rgba(143, 133, 255, .1), transparent 64%); background-size: 190% 100%; animation: glass-tide 10s ease-in-out infinite alternate; }
+.glass-panel > * { position: relative; z-index: 1; }
+.panel.glass-panel::after { content: none; }
+@keyframes glass-tide { from { background-position: 0% 50%; opacity: .28; } to { background-position: 100% 50%; opacity: .62; } }
+
+/* Event selection stays in the dashboard as a compact, non-blocking card. */
+.event-toast-backdrop { position: fixed; inset: auto 18px 18px auto; z-index: 20; display: block; width: min(390px, calc(100vw - 28px)); max-height: min(52vh, 420px); overflow: auto; padding: 0; pointer-events: none; background: transparent; backdrop-filter: none; -webkit-backdrop-filter: none; animation: toast-arrive .35s cubic-bezier(.17,.8,.22,1) both; }
+.event-toast { width: 100%; min-height: 0; display: block; border-radius: 20px; background: radial-gradient(ellipse at 50% 0%, rgba(54,164,164,.2), transparent 58%), linear-gradient(145deg, rgba(14,34,47,.84), rgba(7,18,29,.78)); box-shadow: 0 18px 54px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.035); pointer-events: auto; }
+.toast-content { width: 100%; padding: 20px 18px 17px; text-align: left; }
+.toast-close { top: 13px; right: 13px; }
+.toast-magnitude { justify-content: flex-start; gap: 5px; margin: 10px 0 5px; font-size: 58px; }
+.event-toast h2 { max-width: calc(100% - 18px); font-size: clamp(17px, 2vw, 21px); line-height: 1.2; }
+.toast-data { gap: 7px; margin-top: 16px; padding: 11px 5px; border-color: transparent; background: rgba(255,255,255,.025); }
+.toast-data span { gap: 5px; font-size: 9px; }
+.toast-data strong { font-size: 11px; }
+.event-toast .toast-orbit { top: 4%; left: 90%; width: 210px; opacity: .52; }
+.event-toast .toast-orbit-two { width: 150px; }
+.event-toast .toast-orbit-one { animation-duration: 48s; }
+@media (max-width: 700px) {
+  .event-toast-backdrop { right: 9px; bottom: 9px; width: min(360px, calc(100vw - 18px)); max-height: 48vh; }
+  .toast-content { padding: 17px 14px 13px; }
+  .toast-magnitude { font-size: 48px; }
+  .toast-data { gap: 4px; }
+  .toast-data strong { font-size: 9px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .glass-panel::before { animation: none !important; }
+}
+
