@@ -1,105 +1,30 @@
-import React, { useEffect, useRef, memo } from "react";
+import React, { memo, useEffect, useRef } from "react";
 import type { Earthquake } from "../types";
 
 interface DataTableProps {
   earthquakes: Earthquake[];
   selectedEarthquake: Earthquake | null;
-  onSelect: (eq: Earthquake) => void;
-  style?: React.CSSProperties;
+  onSelect: (earthquake: Earthquake) => void;
 }
 
-const DataTableComponent: React.FC<DataTableProps> = ({
-  earthquakes,
-  selectedEarthquake,
-  onSelect,
-  style,
-}) => {
-  const rowRefs = useRef<(HTMLTableRowElement | null)[]>([]);
-
+const DataTableComponent: React.FC<DataTableProps> = ({ earthquakes, selectedEarthquake, onSelect }) => {
+  const selectedRow = useRef<HTMLTableRowElement>(null);
   useEffect(() => {
-    if (selectedEarthquake) {
-      const index = earthquakes.findIndex((eq) => eq.id === selectedEarthquake.id);
-      if (index >= 0 && rowRefs.current[index]) {
-        rowRefs.current[index]?.scrollIntoView({ behavior: "smooth", block: "center" });
-      }
-    }
-  }, [selectedEarthquake, earthquakes]);
+    selectedRow.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [selectedEarthquake?.id]);
 
-  return (
-    <div style={{ overflow: "auto", ...style }}>
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
-        <thead style={{ position: "sticky", top: 0, background: "#0b1220", color: "white" }}>
-          <tr>
-            <th style={{ padding: "8px 12px", textAlign: "left" }}>Place</th>
-            <th style={{ padding: "8px 12px", textAlign: "right" }}>Magnitude</th>
-            <th style={{ padding: "8px 12px", textAlign: "right" }}>Depth (km)</th>
-            <th style={{ padding: "8px 12px", textAlign: "left" }}>Time</th>
-          </tr>
-        </thead>
-        <tbody>
-          {earthquakes.map((eq, i) => {
-            const isSelected = selectedEarthquake?.id === eq.id;
-            return (
-              <tr
-                key={eq.id}
-                ref={(el) => {
-                  rowRefs.current[i] = el;
-                }}
-                onClick={() => onSelect(eq)}
-                style={{
-                  background: isSelected ? "rgba(255, 165, 0, 0.12)" : "transparent",
-                  cursor: "pointer",
-                }}
-              >
-                <td
-                  style={{
-                    padding: "8px 12px",
-                    borderBottom: "1px solid rgba(255,255,255,0.05)",
-                  }}
-                >
-                  {eq.place}
-                </td>
-                <td
-                  style={{
-                    padding: "8px 12px",
-                    textAlign: "right",
-                    borderBottom: "1px solid rgba(255,255,255,0.05)",
-                  }}
-                >
-                  {eq.magnitude.toFixed(1)}
-                </td>
-                <td
-                  style={{
-                    padding: "8px 12px",
-                    textAlign: "right",
-                    borderBottom: "1px solid rgba(255,255,255,0.05)",
-                  }}
-                >
-                  {eq.depth.toFixed(1)}
-                </td>
-                <td
-                  style={{
-                    padding: "8px 12px",
-                    borderBottom: "1px solid rgba(255,255,255,0.05)",
-                  }}
-                >
-                  {new Date(eq.time).toLocaleString()}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  );
+  return <table className="events-table">
+    <thead><tr><th scope="col">Location</th><th scope="col">Mag</th><th scope="col">Depth</th><th scope="col">Time</th></tr></thead>
+    <tbody>{earthquakes.map((event) => {
+      const selected = selectedEarthquake?.id === event.id;
+      return <tr key={event.id} ref={selected ? selectedRow : null} className={selected ? "is-selected" : undefined}>
+        <td><button className="event-link" onClick={() => onSelect(event)} aria-pressed={selected}>{event.place}</button></td>
+        <td><span className={`magnitude-chip ${event.magnitude >= 5 ? "is-high" : ""}`}>{event.magnitude.toFixed(1)}</span></td>
+        <td>{event.depth.toFixed(1)} km</td>
+        <td><time dateTime={new Date(event.time).toISOString()}>{new Date(event.time).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}</time></td>
+      </tr>;
+    })}</tbody>
+  </table>;
 };
 
-// Memoize component to prevent unnecessary re-renders
-const DataTable = memo(DataTableComponent, (prevProps, nextProps) => {
-  return (
-    prevProps.earthquakes.length === nextProps.earthquakes.length &&
-    prevProps.selectedEarthquake?.id === nextProps.selectedEarthquake?.id
-  );
-});
-
-export default DataTable;
+export default memo(DataTableComponent);
