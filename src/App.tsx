@@ -173,7 +173,7 @@ const App: React.FC = () => {
   }, [filtered, selectedId]);
 
   useEffect(() => {
-    if (!globeOpen) return;
+    if (!globeOpen && !eventToastOpen) return;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") { setGlobeOpen(false); setEventToastOpen(false); }
     };
