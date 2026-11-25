@@ -405,21 +405,31 @@ const ParticleEarthComponent: React.FC<ParticleEarthProps> = ({ events, selected
     };
 
     const loader = new THREE.TextureLoader();
+    const useEarthTexture = (texture: THREE.Texture) => {
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.anisotropy = Math.min(renderer.capabilities.getMaxAnisotropy(), 8);
+      earthMaterial.map = texture;
+      earthMaterial.needsUpdate = true;
+      startParticleIntro(texture.image as HTMLImageElement);
+    };
     earthTexture = loader.load(
       "/earth_atmos_2048.jpg",
-      (texture) => {
-        texture.colorSpace = THREE.SRGBColorSpace;
-        texture.anisotropy = Math.min(renderer.capabilities.getMaxAnisotropy(), 8);
-        earthMaterial.map = texture;
-        earthMaterial.needsUpdate = true;
-        startParticleIntro(texture.image as HTMLImageElement);
-      },
+      useEarthTexture,
       undefined,
       (error) => {
-        console.error("Earth texture failed to load", error);
-        earthMaterial.color.set(0x345b5c);
-        earthMaterial.opacity = 1;
-        startParticleIntro(undefined);
+        console.warn("Local Earth texture unavailable; loading the hosted Earth map", error);
+        earthTexture = loader.load(
+          "https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg",
+          useEarthTexture,
+          undefined,
+          (fallbackError) => {
+            console.error("Earth texture failed to load", fallbackError);
+            earthMaterial.color.set(0x345b5c);
+            earthMaterial.opacity = 1;
+            earthMaterial.depthWrite = true;
+            startParticleIntro(undefined);
+          },
+        );
       },
     );
 
