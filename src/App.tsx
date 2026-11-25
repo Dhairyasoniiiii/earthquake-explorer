@@ -122,19 +122,21 @@ const App: React.FC = () => {
       <div className="intro-loader-copy"><span>SEISMIC FIELD · INITIALIZING</span><strong>{String(loadingPercent).padStart(2, "0")}<i>%</i></strong><div className="intro-loader-track"><span style={{ width: `${loadingPercent * 10}%` }}/></div><small>PARTICLES GATHERING</small></div>
     </div>}
     <header className="earth-header">
-      <a className="wordmark" href="#home" aria-label="Seismic home"><span className="wordmark-icon">◉</span><span>SEISMIC<span className="wordmark-light"> / EARTH</span></span></a>
+      <a className="wordmark" href="#home" aria-label="Seismic Observatory home"><span className="wordmark-icon">◒</span><span>SEISMIC<span className="wordmark-light"> / OBSERVATORY</span></span></a>
+      <div className="header-index">GLOBAL FIELD STUDY <span>·</span> 01 / 30 DAYS</div>
       <div className="header-live"><i className={`live-indicator${error ? " feed-error" : ""}`}/>{error ? <>DEGRADED <span>·</span> RETRYING</> : updatedAt ? <>LIVE <span>·</span> USGS</> : loading ? "CONNECTING TO USGS" : "FEED OFFLINE"}</div>
     </header>
 
     <section className="earth-stage" id="home" aria-label="Interactive earthquake globe">
-      <div className="stage-copy"><span className="eyebrow">A LIVING PLANET</span><h1>Listen to the<br/><em>moving Earth.</em></h1><p>Real-time seismic activity, mapped across the globe.</p></div>
+      <div className="stage-copy"><span className="eyebrow">EARTH · LIVE MONITOR</span><h1>The ground<br/><em>is always moving.</em></h1><p>Every tremor leaves a trace. Explore the planet’s latest seismic activity.</p></div>
       <div className="earth-halo" aria-hidden="true"/><ParticleEarth events={filtered} onSelect={openEvent} onIntroComplete={completeIntro}/>
-      <div className="stage-caption"><span className="caption-mark"/>{loading ? "Gathering seismic signals" : `${filtered.length.toLocaleString()} earthquakes · past 30 days`}</div>
-      <div className="stage-coordinates" aria-hidden="true">DRAG TO ORBIT<br/>SCROLL TO ZOOM</div>
+      <div className="stage-readout"><span>30-DAY WINDOW</span><strong>{filtered.length.toLocaleString()}</strong><small>earthquakes in view</small></div>
+      <div className="stage-caption"><span className="caption-mark"/>{loading ? "ACQUIRING SIGNAL" : "USGS · PAST 30 DAYS"}</div>
+      <div className="stage-coordinates" aria-hidden="true"><span>DRAG TO ORBIT</span><br/><span>SCROLL TO ZOOM</span></div>
     </section>
 
     <footer className="earth-console glass-console">
-      <div className="console-intro"><span className="eyebrow">LIVE SEISMIC FIELD</span><strong>Earth, in motion</strong><small>{error ? "USGS unavailable · retrying" : updatedAt ? `Updated ${new Date(updatedAt).toLocaleTimeString()}` : "Connecting to USGS"}</small></div>
+      <div className="console-intro"><span className="eyebrow">FIELD CONTROLS</span><strong>Explore activity</strong><small>{error ? "USGS unavailable · retrying" : updatedAt ? `Updated ${new Date(updatedAt).toLocaleTimeString()}` : "Connecting to USGS"}</small></div>
       <label className="place-search"><span aria-hidden="true">⌕</span><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search a place" aria-label="Search earthquake place"/><kbd>↵</kbd></label>
       <label className="magnitude-filter"><span>MAGNITUDE <b>{minimumMagnitude.toFixed(1)}+</b></span><input type="range" min="0" max="8" step="0.1" value={minimumMagnitude} onChange={(event) => setMinimumMagnitude(Number(event.target.value))}/></label>
       <div className="console-stat"><span>EVENTS</span><strong>{filtered.length.toLocaleString()}</strong></div>
