@@ -1,6 +1,7 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { ParticleEarth } from "./components/ParticleEarth";
+import React, { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import type { Earthquake } from "./types";
+
+const ParticleEarth = lazy(() => import("./components/ParticleEarth").then((module) => ({ default: module.ParticleEarth })));
 
 const FEED_URL = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_month.geojson";
 const REFRESH_MS = 60_000;
@@ -129,7 +130,7 @@ const App: React.FC = () => {
 
     <section className="earth-stage" id="home" aria-label="Interactive earthquake globe">
       <div className="stage-copy"><span className="eyebrow">EARTH · LIVE MONITOR</span><h1>The ground<br/><em>is always moving.</em></h1><p>Every tremor leaves a trace. Explore the planet’s latest seismic activity.</p></div>
-      <div className="earth-halo" aria-hidden="true"/><ParticleEarth events={filtered} selectedId={selected?.id ?? null} onSelect={openEvent} onIntroComplete={completeIntro}/>
+      <div className="earth-halo" aria-hidden="true"/><Suspense fallback={null}><ParticleEarth events={filtered} selectedId={selected?.id ?? null} onSelect={openEvent} onIntroComplete={completeIntro}/></Suspense>
       <div className="stage-readout"><span>30-DAY WINDOW</span><strong>{filtered.length.toLocaleString()}</strong><small>earthquakes in view</small></div>
       <div className="stage-caption"><span className="caption-mark"/>{loading ? "ACQUIRING SIGNAL" : "USGS · PAST 30 DAYS"}</div>
       <div className="stage-coordinates" aria-hidden="true"><span>DRAG TO ORBIT</span><br/><span>SCROLL TO ZOOM</span></div>
