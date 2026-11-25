@@ -105,7 +105,7 @@ const App: React.FC = () => {
     <div className="space-backdrop" aria-hidden="true"><span className="nebula nebula-a"/><span className="nebula nebula-b"/><span className="space-grain"/></div>
     <header className="earth-header">
       <a className="wordmark" href="#home" aria-label="Seismic home"><span className="wordmark-icon">◉</span><span>SEISMIC<span className="wordmark-light"> / EARTH</span></span></a>
-      <div className="header-live"><i className="live-indicator"/>{updatedAt ? <>LIVE <span>·</span> USGS</> : loading ? "CONNECTING TO USGS" : "FEED OFFLINE"}</div>
+      <div className="header-live"><i className={`live-indicator${error ? " feed-error" : ""}`}/>{error ? <>DEGRADED <span>·</span> RETRYING</> : updatedAt ? <>LIVE <span>·</span> USGS</> : loading ? "CONNECTING TO USGS" : "FEED OFFLINE"}</div>
     </header>
 
     <section className="earth-stage" id="home" aria-label="Interactive earthquake globe">
@@ -116,7 +116,7 @@ const App: React.FC = () => {
     </section>
 
     <footer className="earth-console glass-console">
-      <div className="console-intro"><span className="eyebrow">LIVE SEISMIC FIELD</span><strong>Earth, in motion</strong><small>{updatedAt ? `Updated ${new Date(updatedAt).toLocaleTimeString()}` : error ? "Retrying USGS connection" : "Connecting to USGS"}</small></div>
+      <div className="console-intro"><span className="eyebrow">LIVE SEISMIC FIELD</span><strong>Earth, in motion</strong><small>{error ? "USGS unavailable · retrying" : updatedAt ? `Updated ${new Date(updatedAt).toLocaleTimeString()}` : "Connecting to USGS"}</small></div>
       <label className="place-search"><span aria-hidden="true">⌕</span><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search a place" aria-label="Search earthquake place"/><kbd>↵</kbd></label>
       <label className="magnitude-filter"><span>MAGNITUDE <b>{minimumMagnitude.toFixed(1)}+</b></span><input type="range" min="0" max="8" step="0.1" value={minimumMagnitude} onChange={(event) => setMinimumMagnitude(Number(event.target.value))}/></label>
       <div className="console-stat"><span>EVENTS</span><strong>{filtered.length.toLocaleString()}</strong></div>
