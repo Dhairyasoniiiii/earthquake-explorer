@@ -3,22 +3,24 @@ import { animate } from "animejs";
 import { gsap } from "gsap";
 import type { Earthquake } from "../types";
 
-interface ParticleEarthProps { events: Earthquake[]; onSelect: (id: string) => void }
+interface ParticleEarthProps { events: Earthquake[]; onSelect: (id: string) => void; onIntroComplete: () => void }
 interface Particle { x: number; y: number; z: number; fromX: number; fromY: number; fromZ: number; land: boolean; size: number }
 interface ProjectedEvent { id: string; x: number; y: number; radius: number; depth: number; magnitude: number }
 
-const PARTICLE_COUNT = 440;
+const PARTICLE_COUNT = 400;
 const TAU = Math.PI * 2;
-const FRAME_INTERVAL_MS = 1000 / 24;
+const FRAME_INTERVAL_MS = 1000 / 60;
 
 // A deliberately light canvas globe: no texture downloads, WebGL scene, or per-frame React work.
-const ParticleEarthComponent: React.FC<ParticleEarthProps> = ({ events, onSelect }) => {
+const ParticleEarthComponent: React.FC<ParticleEarthProps> = ({ events, onSelect, onIntroComplete }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawRef = useRef<((timestamp: number) => void) | null>(null);
   const eventsRef = useRef(events);
   const selectRef = useRef(onSelect);
+  const completeRef = useRef(onIntroComplete);
   eventsRef.current = events;
   selectRef.current = onSelect;
+  completeRef.current = onIntroComplete;
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -31,7 +33,15 @@ const ParticleEarthComponent: React.FC<ParticleEarthProps> = ({ events, onSelect
     let dpr = 1;
     let frame = 0;
     let rotation = -0.32;
+    let tilt = .22;
+    let zoom = 1;
+    let currentRadius = 0;
     let lastFrame = 0;
+    let activePointer: number | null = null;
+    let pointerMoved = false;
+    let lastPointerX = 0;
+    let lastPointerY = 0;
+    let introReported = false;
     let projectedEvents: ProjectedEvent[] = [];
     const morph = { progress: reducedMotion ? 1 : 0 };
     let morphAnimation: ReturnType<typeof animate> | null = null;
@@ -54,7 +64,7 @@ const ParticleEarthComponent: React.FC<ParticleEarthProps> = ({ events, onSelect
       const bounds = canvas!.getBoundingClientRect();
       width = bounds.width;
       height = bounds.height;
-      dpr = Math.min(window.devicePixelRatio || 1, 1.1);
+      dpr = Math.min(window.devicePixelRatio || 1, 1);
       canvas!.width = Math.round(width * dpr);
       canvas!.height = Math.round(height * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -70,11 +80,16 @@ const ParticleEarthComponent: React.FC<ParticleEarthProps> = ({ events, onSelect
       if (!width || !height) return;
       ctx.clearRect(0, 0, width, height);
 
-      const radius = Math.min(width * .295, height * .39, 290);
+      const radius = Math.min(width * .295, height * .39, 290) * zoom;
+      currentRadius = radius;
       const cx = width * .55;
       const cy = height * .52;
       const progress = morph.progress;
       if (progress >= 1 && !reducedMotion) rotation += elapsed * .00005625;
+      if (progress >= 1 && !introReported) {
+        introReported = true;
+        completeRef.current();
+      }
 
       // Soft atmosphere and the restrained orbit frame.
       const atmosphere = ctx.createRadialGradient(cx, cy, radius * .75, cx, cy, radius * 1.45);
@@ -88,7 +103,6 @@ const ParticleEarthComponent: React.FC<ParticleEarthProps> = ({ events, onSelect
 
       const c = Math.cos(rotation);
       const s = Math.sin(rotation);
-      const tilt = .22;
       const ct = Math.cos(tilt);
       const st = Math.sin(tilt);
       for (const particle of particles) {
@@ -138,17 +152,74 @@ const ParticleEarthComponent: React.FC<ParticleEarthProps> = ({ events, onSelect
       ctx.strokeStyle = edge; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.arc(cx, cy, radius, 0, TAU); ctx.stroke();
     }
 
-    function handleClick(event: MouseEvent) {
+    function selectAt(clientX: number, clientY: number) {
       const bounds = canvas!.getBoundingClientRect();
-      const x = event.clientX - bounds.left;
-      const y = event.clientY - bounds.top;
+      const x = clientX - bounds.left;
+      const y = clientY - bounds.top;
       let nearest: ProjectedEvent | undefined;
-      let distance = 15;
+      let distance = Math.max(12, 15 * zoom);
       for (const point of projectedEvents) {
         const candidate = Math.hypot(point.x - x, point.y - y);
         if (candidate < distance) { nearest = point; distance = candidate; }
       }
       if (nearest) selectRef.current(nearest.id);
+    }
+
+    function handlePointerDown(event: PointerEvent) {
+      if (event.button !== 0) return;
+      activePointer = event.pointerId;
+      pointerMoved = false;
+      lastPointerX = event.clientX;
+      lastPointerY = event.clientY;
+      canvas!.setPointerCapture(event.pointerId);
+      canvas!.style.cursor = "grabbing";
+    }
+
+    function handlePointerMove(event: PointerEvent) {
+      if (activePointer !== event.pointerId) return;
+      const dx = event.clientX - lastPointerX;
+      const dy = event.clientY - lastPointerY;
+      if (Math.abs(dx) + Math.abs(dy) > 2) pointerMoved = true;
+      if (pointerMoved && currentRadius > 0) {
+        rotation += dx / currentRadius;
+        tilt = Math.max(-1.1, Math.min(1.1, tilt + dy / currentRadius));
+        if (reducedMotion) draw(performance.now());
+      }
+      lastPointerX = event.clientX;
+      lastPointerY = event.clientY;
+    }
+
+    function handlePointerUp(event: PointerEvent) {
+      if (activePointer !== event.pointerId) return;
+      if (!pointerMoved) selectAt(event.clientX, event.clientY);
+      activePointer = null;
+      canvas!.style.cursor = "grab";
+      if (canvas!.hasPointerCapture(event.pointerId)) canvas!.releasePointerCapture(event.pointerId);
+    }
+
+    function handlePointerCancel(event: PointerEvent) {
+      if (activePointer !== event.pointerId) return;
+      activePointer = null;
+      canvas!.style.cursor = "grab";
+    }
+
+    function handleWheel(event: WheelEvent) {
+      event.preventDefault();
+      zoom = Math.max(.72, Math.min(2.15, zoom * Math.exp(-event.deltaY * .001)));
+      if (reducedMotion) draw(performance.now());
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      const step = event.shiftKey ? .28 : .12;
+      if (event.key === "ArrowLeft") rotation -= step;
+      else if (event.key === "ArrowRight") rotation += step;
+      else if (event.key === "ArrowUp") tilt = Math.max(-1.1, tilt - step);
+      else if (event.key === "ArrowDown") tilt = Math.min(1.1, tilt + step);
+      else if (event.key === "+" || event.key === "=") zoom = Math.min(2.15, zoom * 1.15);
+      else if (event.key === "-") zoom = Math.max(.72, zoom / 1.15);
+      else return;
+      event.preventDefault();
+      if (reducedMotion) draw(performance.now());
     }
 
     drawRef.current = draw;
@@ -160,7 +231,13 @@ const ParticleEarthComponent: React.FC<ParticleEarthProps> = ({ events, onSelect
     const observer = new ResizeObserver(resize);
     observer.observe(canvas);
     document.addEventListener("visibilitychange", handleVisibilityChange);
-    canvas.addEventListener("click", handleClick);
+    canvas.style.cursor = "grab";
+    canvas.addEventListener("pointerdown", handlePointerDown);
+    canvas.addEventListener("pointermove", handlePointerMove);
+    canvas.addEventListener("pointerup", handlePointerUp);
+    canvas.addEventListener("pointercancel", handlePointerCancel);
+    canvas.addEventListener("wheel", handleWheel, { passive: false });
+    canvas.addEventListener("keydown", handleKeyDown);
     resize();
     const intro = gsap.timeline({ onComplete: () => {
       if (!reducedMotion) {
@@ -174,12 +251,25 @@ const ParticleEarthComponent: React.FC<ParticleEarthProps> = ({ events, onSelect
     } });
     intro.fromTo(canvas, { opacity: reducedMotion ? 1 : 0, scale: reducedMotion ? 1 : .88 }, { opacity: 1, scale: 1, duration: reducedMotion ? 0 : 1.1, ease: "power3.out" });
     frame = window.requestAnimationFrame(draw);
-    return () => { observer.disconnect(); window.cancelAnimationFrame(frame); intro.kill(); morphAnimation?.pause(); canvas.removeEventListener("click", handleClick); document.removeEventListener("visibilitychange", handleVisibilityChange); drawRef.current = null; };
+    return () => {
+      observer.disconnect();
+      window.cancelAnimationFrame(frame);
+      intro.kill();
+      morphAnimation?.pause();
+      canvas.removeEventListener("pointerdown", handlePointerDown);
+      canvas.removeEventListener("pointermove", handlePointerMove);
+      canvas.removeEventListener("pointerup", handlePointerUp);
+      canvas.removeEventListener("pointercancel", handlePointerCancel);
+      canvas.removeEventListener("wheel", handleWheel);
+      canvas.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      drawRef.current = null;
+    };
   }, []);
 
   useEffect(() => { drawRef.current?.(performance.now()); }, [events]);
 
-  return <canvas className="particle-earth" ref={canvasRef} role="img" aria-label="Animated particle globe showing recent earthquake locations"/>;
+  return <canvas className="particle-earth" ref={canvasRef} tabIndex={0} role="application" aria-label="Interactive particle globe. Drag to rotate, scroll to zoom, use arrow keys to rotate and plus or minus to zoom, and select an earthquake marker for details."/>;
 };
 
 function isLand(lat: number, lon: number) {
