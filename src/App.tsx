@@ -4,23 +4,33 @@ import type { Earthquake } from "./types";
 
 const FEED_URL = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_month.geojson";
 const REFRESH_MS = 60_000;
+const REQUEST_TIMEOUT_MS = 15_000;
+const MAX_RETRY_MS = 10 * 60_000;
 
-type FeedFeature = { id: string; properties?: { place?: string; mag?: number; time?: number; title?: string }; geometry?: { coordinates?: number[] } };
+type FeedFeature = { id?: string; properties?: { place?: string; mag?: number | null; time?: number; title?: string }; geometry?: { coordinates?: unknown } };
 
 function parseFeed(payload: unknown): Earthquake[] {
-  const features = (payload as { features?: FeedFeature[] })?.features ?? [];
-  return features.flatMap((feature) => {
-    const [lng, lat, depth] = feature.geometry?.coordinates ?? [];
+  if (!payload || typeof payload !== "object" || !("features" in payload)) return [];
+  const features = (payload as { features?: unknown }).features;
+  if (!Array.isArray(features)) return [];
+  return features.flatMap((item): Earthquake[] => {
+    if (!item || typeof item !== "object") return [];
+    const feature = item as FeedFeature;
+    const coordinates = feature.geometry?.coordinates;
+    if (!Array.isArray(coordinates)) return [];
+    const [lng, lat, depth] = coordinates;
     const properties = feature.properties;
-    if (!feature.id || !properties || !Number.isFinite(lat) || !Number.isFinite(lng) || !Number.isFinite(properties.time)) return [];
+    if (!feature.id || !properties || typeof properties.time !== "number" || !Number.isFinite(properties.time)
+      || typeof lat !== "number" || !Number.isFinite(lat) || lat < -90 || lat > 90
+      || typeof lng !== "number" || !Number.isFinite(lng) || lng < -180 || lng > 180) return [];
     return [{
       id: feature.id,
       place: properties.place || properties.title || "Unknown location",
-      magnitude: Number.isFinite(properties.mag) ? properties.mag as number : 0,
-      depth: Number.isFinite(depth) ? depth as number : 0,
-      lat: lat as number,
-      lng: lng as number,
-      time: properties.time as number,
+      magnitude: typeof properties.mag === "number" && Number.isFinite(properties.mag) ? properties.mag : 0,
+      depth: typeof depth === "number" && Number.isFinite(depth) ? depth : 0,
+      lat,
+      lng,
+      time: properties.time,
     }];
   });
 }
@@ -30,46 +40,51 @@ const App: React.FC = () => {
   const [search, setSearch] = useState("");
   const [minimumMagnitude, setMinimumMagnitude] = useState(0);
   const [selected, setSelected] = useState<Earthquake | null>(null);
-  const [now, setNow] = useState(() => Date.now());
   const [updatedAt, setUpdatedAt] = useState<number | null>(null);
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 1_000);
-    return () => window.clearInterval(timer);
-  }, []);
-
-  useEffect(() => {
-    const controller = new AbortController();
     let active = true;
     let pending = false;
+    let retryTimer = 0;
+    let retryDelay = REFRESH_MS;
     const load = async () => {
       if (pending) return;
       pending = true;
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
       try {
         const response = await fetch(FEED_URL, { signal: controller.signal, cache: "no-cache" });
         if (!response.ok) throw new Error("USGS feed unavailable");
         const rows = parseFeed(await response.json());
+        if (!rows.length) throw new Error("USGS feed returned no valid earthquake records");
         if (!active) return;
         setEarthquakes(rows);
         setUpdatedAt(Date.now());
         setError(false);
+        retryDelay = REFRESH_MS;
       } catch (cause) {
-        if (active && !(cause instanceof DOMException && cause.name === "AbortError")) setError(true);
+        if (active) {
+          setError(true);
+          retryDelay = Math.min(retryDelay * 2, MAX_RETRY_MS);
+        }
       } finally {
+        window.clearTimeout(timeout);
         pending = false;
-        if (active) setLoading(false);
+        if (active) {
+          setLoading(false);
+          retryTimer = window.setTimeout(() => void load(), retryDelay);
+        }
       }
     };
     void load();
-    const timer = window.setInterval(() => void load(), REFRESH_MS);
-    return () => { active = false; controller.abort(); window.clearInterval(timer); };
+    return () => { active = false; window.clearTimeout(retryTimer); };
   }, []);
 
   const filtered = useMemo(() => {
-    const query = search.trim().toLocaleLowerCase();
-    return earthquakes.filter((event) => event.magnitude >= minimumMagnitude && event.place.toLocaleLowerCase().includes(query));
+    const query = search.trim().toLowerCase();
+    return earthquakes.filter((event) => event.magnitude >= minimumMagnitude && event.place.toLowerCase().includes(query));
   }, [earthquakes, minimumMagnitude, search]);
   const strongest = useMemo(() => filtered.reduce((max, event) => Math.max(max, event.magnitude), 0), [filtered]);
   const average = useMemo(() => filtered.length ? filtered.reduce((sum, event) => sum + event.magnitude, 0) / filtered.length : 0, [filtered]);
@@ -77,6 +92,9 @@ const App: React.FC = () => {
   const openEvent = useCallback((id: string) => {
     setSelected(filtered.find((event) => event.id === id) ?? null);
   }, [filtered]);
+  useEffect(() => {
+    if (selected && !filtered.some((event) => event.id === selected.id)) setSelected(null);
+  }, [filtered, selected]);
   useEffect(() => {
     const closeOnEscape = (event: KeyboardEvent) => { if (event.key === "Escape") setSelected(null); };
     window.addEventListener("keydown", closeOnEscape);
@@ -87,7 +105,7 @@ const App: React.FC = () => {
     <div className="space-backdrop" aria-hidden="true"><span className="nebula nebula-a"/><span className="nebula nebula-b"/><span className="space-grain"/></div>
     <header className="earth-header">
       <a className="wordmark" href="#home" aria-label="Seismic home"><span className="wordmark-icon">◉</span><span>SEISMIC<span className="wordmark-light"> / EARTH</span></span></a>
-      <div className="header-live"><i className="live-indicator"/>{updatedAt ? <>LIVE <span>·</span> {new Date(now).toLocaleTimeString()}</> : loading ? "CONNECTING TO USGS" : "FEED OFFLINE"}</div>
+      <div className="header-live"><i className="live-indicator"/>{updatedAt ? <>LIVE <span>·</span> USGS</> : loading ? "CONNECTING TO USGS" : "FEED OFFLINE"}</div>
     </header>
 
     <section className="earth-stage" id="home" aria-label="Interactive earthquake globe">
