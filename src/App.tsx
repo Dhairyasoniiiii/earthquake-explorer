@@ -119,7 +119,7 @@ const App: React.FC = () => {
   return <main className="earth-app">
     <div className="space-backdrop" aria-hidden="true"><span className="nebula nebula-a"/><span className="nebula nebula-b"/><span className="space-grain"/></div>
     {introLoaderVisible && <div className={`intro-loader${introComplete ? " intro-loader-out" : ""}`} role="status" aria-live="polite" aria-label={`Forming interactive globe, ${loadingPercent} percent`}>
-      <div className="intro-loader-copy"><span>SEISMIC FIELD · INITIALIZING</span><strong>{String(loadingPercent).padStart(2, "0")}<i>%</i></strong><div className="intro-loader-track"><span style={{ width: `${loadingPercent * 10}%` }}/></div><small>PARTICLES GATHERING</small></div>
+      <div className="intro-loader-copy"><span>SEISMIC FIELD · INITIALIZING</span><strong>{String(loadingPercent).padStart(2, "0")}<i>%</i></strong><div className="intro-loader-track"><span style={{ width: `${loadingPercent * 10}%` }}/></div><small>MAP PARTICLES → EARTH</small></div>
     </div>}
     <header className="earth-header">
       <a className="wordmark" href="#home" aria-label="Seismic Observatory home"><span className="wordmark-icon">◒</span><span>SEISMIC<span className="wordmark-light"> / OBSERVATORY</span></span></a>
@@ -129,7 +129,7 @@ const App: React.FC = () => {
 
     <section className="earth-stage" id="home" aria-label="Interactive earthquake globe">
       <div className="stage-copy"><span className="eyebrow">EARTH · LIVE MONITOR</span><h1>The ground<br/><em>is always moving.</em></h1><p>Every tremor leaves a trace. Explore the planet’s latest seismic activity.</p></div>
-      <div className="earth-halo" aria-hidden="true"/><ParticleEarth events={filtered} onSelect={openEvent} onIntroComplete={completeIntro}/>
+      <div className="earth-halo" aria-hidden="true"/><ParticleEarth events={filtered} selectedId={selected?.id ?? null} onSelect={openEvent} onIntroComplete={completeIntro}/>
       <div className="stage-readout"><span>30-DAY WINDOW</span><strong>{filtered.length.toLocaleString()}</strong><small>earthquakes in view</small></div>
       <div className="stage-caption"><span className="caption-mark"/>{loading ? "ACQUIRING SIGNAL" : "USGS · PAST 30 DAYS"}</div>
       <div className="stage-coordinates" aria-hidden="true"><span>DRAG TO ORBIT</span><br/><span>SCROLL TO ZOOM</span></div>
@@ -149,3 +149,4 @@ const App: React.FC = () => {
 };
 
 export default App;
+
