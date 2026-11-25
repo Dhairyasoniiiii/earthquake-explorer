@@ -20,12 +20,12 @@ function parseFeed(payload: unknown): Earthquake[] {
     if (!Array.isArray(coordinates)) return [];
     const [lng, lat, depth] = coordinates;
     const properties = feature.properties;
-    if (!feature.id || !properties || typeof properties.time !== "number" || !Number.isFinite(properties.time)
+    if (typeof feature.id !== "string" || !feature.id || !properties || typeof properties.time !== "number" || !Number.isFinite(properties.time)
       || typeof lat !== "number" || !Number.isFinite(lat) || lat < -90 || lat > 90
       || typeof lng !== "number" || !Number.isFinite(lng) || lng < -180 || lng > 180) return [];
     return [{
       id: feature.id,
-      place: properties.place || properties.title || "Unknown location",
+      place: typeof properties.place === "string" ? properties.place : typeof properties.title === "string" ? properties.title : "Unknown location",
       magnitude: typeof properties.mag === "number" && Number.isFinite(properties.mag) ? properties.mag : 0,
       depth: typeof depth === "number" && Number.isFinite(depth) ? depth : 0,
       lat,
@@ -129,3 +129,4 @@ const App: React.FC = () => {
 };
 
 export default App;
+
