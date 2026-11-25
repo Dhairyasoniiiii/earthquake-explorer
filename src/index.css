@@ -34,6 +34,9 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--aqua); outl
 .stage-caption { position: absolute; left: 1.5%; bottom: 7%; display: flex; align-items: center; gap: 9px; color: #88a0ac; font: 9px "DM Mono", monospace; letter-spacing: .07em; }
 .caption-mark { width: 17px; height: 1px; background: #86eadb; box-shadow: 0 0 9px #71dccc; }
 .stage-coordinates { position: absolute; right: 3%; top: 21%; color: rgba(146,182,192,.47); font: 9px/1.8 "DM Mono", monospace; letter-spacing: .1em; text-align: right; }
+.globe-zoom-controls { position: absolute; z-index: 2; right: 2.5%; bottom: 5%; display: grid; gap: 7px; }
+.globe-zoom-controls button { width: 34px; height: 34px; border: 1px solid rgba(178,224,226,.2); border-radius: 10px; background: rgba(8,22,31,.68); color: #b9e9e2; font: 20px/1 "DM Mono", monospace; cursor: pointer; backdrop-filter: blur(8px); }
+.globe-zoom-controls button:hover { border-color: rgba(143,240,222,.58); background: rgba(17,44,54,.8); }
 .glass-console { background: linear-gradient(130deg, rgba(19,47,59,.53), rgba(10,23,35,.48)); backdrop-filter: blur(14px) saturate(130%); -webkit-backdrop-filter: blur(14px) saturate(130%); box-shadow: 0 20px 70px rgba(0,0,0,.21), inset 0 1px 0 rgba(229,250,255,.05); }
 .earth-console { position: relative; z-index: 3; flex: 0 0 auto; display: grid; grid-template-columns: minmax(160px,1.25fr) minmax(160px,1.2fr) minmax(130px,1.1fr) repeat(3,minmax(75px,.55fr)); align-items: center; gap: clamp(12px,2vw,30px); min-height: 100px; padding: 17px 23px; border-radius: 18px; animation: fade-rise .9s .16s cubic-bezier(.2,.7,.2,1) both; }
 .console-intro { display: grid; gap: 6px; }
@@ -98,6 +101,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--aqua); outl
   .stage-copy .eyebrow { font-size: 8px; }
   .earth-halo { left: 55%; top: 54%; width: 110vw; }
   .stage-coordinates { top: 19%; right: 1%; font-size: 7px; }
+  .globe-zoom-controls { right: 2%; bottom: 7%; }
   .stage-caption { left: 2%; bottom: 3%; font-size: 7px; }
   .earth-console { grid-template-columns: 1fr 1fr 1fr; gap: 11px 8px; padding: 12px 11px; border-radius: 14px; }
   .console-intro { grid-column: span 1; gap: 4px; }
@@ -126,4 +130,3 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--aqua); outl
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
   .intro-loader, .intro-loader-track > span { transition-duration: .01ms !important; }
 }
-
