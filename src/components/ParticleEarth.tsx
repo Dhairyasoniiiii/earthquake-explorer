@@ -18,6 +18,7 @@ const ParticleEarthComponent: React.FC<ParticleEarthProps> = ({ events, onSelect
   const eventsRef = useRef(events);
   const selectRef = useRef(onSelect);
   const completeRef = useRef(onIntroComplete);
+  const zoomRef = useRef<(factor: number) => void>(() => {});
   eventsRef.current = events;
   selectRef.current = onSelect;
   completeRef.current = onIntroComplete;
@@ -205,7 +206,11 @@ const ParticleEarthComponent: React.FC<ParticleEarthProps> = ({ events, onSelect
 
     function handleWheel(event: WheelEvent) {
       event.preventDefault();
-      zoom = Math.max(.72, Math.min(2.15, zoom * Math.exp(-event.deltaY * .001)));
+      zoomBy(Math.exp(-event.deltaY * .001));
+    }
+
+    function zoomBy(factor: number) {
+      zoom = Math.max(.72, Math.min(2.15, zoom * factor));
       if (reducedMotion) draw(performance.now());
     }
 
@@ -223,6 +228,7 @@ const ParticleEarthComponent: React.FC<ParticleEarthProps> = ({ events, onSelect
     }
 
     drawRef.current = draw;
+    zoomRef.current = zoomBy;
 
     function handleVisibilityChange() {
       if (!document.hidden && !frame) frame = window.requestAnimationFrame(draw);
@@ -264,12 +270,19 @@ const ParticleEarthComponent: React.FC<ParticleEarthProps> = ({ events, onSelect
       canvas.removeEventListener("keydown", handleKeyDown);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       drawRef.current = null;
+      zoomRef.current = () => {};
     };
   }, []);
 
   useEffect(() => { drawRef.current?.(performance.now()); }, [events]);
 
-  return <canvas className="particle-earth" ref={canvasRef} tabIndex={0} role="application" aria-label="Interactive particle globe. Drag to rotate, scroll to zoom, use arrow keys to rotate and plus or minus to zoom, and select an earthquake marker for details."/>;
+  return <>
+    <canvas className="particle-earth" ref={canvasRef} tabIndex={0} role="application" aria-label="Interactive particle globe. Drag to rotate, scroll to zoom, use arrow keys to rotate and plus or minus to zoom, and select an earthquake marker for details."/>
+    <div className="globe-zoom-controls" role="group" aria-label="Globe zoom controls">
+      <button type="button" onClick={() => zoomRef.current(1.25)} aria-label="Zoom in">+</button>
+      <button type="button" onClick={() => zoomRef.current(.8)} aria-label="Zoom out">−</button>
+    </div>
+  </>;
 };
 
 function isLand(lat: number, lon: number) {
