@@ -40,9 +40,24 @@ const App: React.FC = () => {
   const [search, setSearch] = useState("");
   const [minimumMagnitude, setMinimumMagnitude] = useState(0);
   const [selected, setSelected] = useState<Earthquake | null>(null);
+  const [loadingPercent, setLoadingPercent] = useState(1);
+  const [introComplete, setIntroComplete] = useState(false);
+  const [introLoaderVisible, setIntroLoaderVisible] = useState(true);
   const [updatedAt, setUpdatedAt] = useState<number | null>(null);
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (introComplete) return;
+    const timer = window.setInterval(() => setLoadingPercent((value) => Math.min(value + 1, 10)), 100);
+    return () => window.clearInterval(timer);
+  }, [introComplete]);
+
+  const completeIntro = useCallback(() => {
+    setLoadingPercent(10);
+    setIntroComplete(true);
+    window.setTimeout(() => setIntroLoaderVisible(false), 480);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -103,6 +118,9 @@ const App: React.FC = () => {
 
   return <main className="earth-app">
     <div className="space-backdrop" aria-hidden="true"><span className="nebula nebula-a"/><span className="nebula nebula-b"/><span className="space-grain"/></div>
+    {introLoaderVisible && <div className={`intro-loader${introComplete ? " intro-loader-out" : ""}`} role="status" aria-live="polite" aria-label={`Forming interactive globe, ${loadingPercent} percent`}>
+      <div className="intro-loader-copy"><span>SEISMIC FIELD · INITIALIZING</span><strong>{String(loadingPercent).padStart(2, "0")}<i>%</i></strong><div className="intro-loader-track"><span style={{ width: `${loadingPercent * 10}%` }}/></div><small>PARTICLES GATHERING</small></div>
+    </div>}
     <header className="earth-header">
       <a className="wordmark" href="#home" aria-label="Seismic home"><span className="wordmark-icon">◉</span><span>SEISMIC<span className="wordmark-light"> / EARTH</span></span></a>
       <div className="header-live"><i className={`live-indicator${error ? " feed-error" : ""}`}/>{error ? <>DEGRADED <span>·</span> RETRYING</> : updatedAt ? <>LIVE <span>·</span> USGS</> : loading ? "CONNECTING TO USGS" : "FEED OFFLINE"}</div>
@@ -110,9 +128,9 @@ const App: React.FC = () => {
 
     <section className="earth-stage" id="home" aria-label="Interactive earthquake globe">
       <div className="stage-copy"><span className="eyebrow">A LIVING PLANET</span><h1>Listen to the<br/><em>moving Earth.</em></h1><p>Real-time seismic activity, mapped across the globe.</p></div>
-      <div className="earth-halo" aria-hidden="true"/><ParticleEarth events={filtered} onSelect={openEvent}/>
+      <div className="earth-halo" aria-hidden="true"/><ParticleEarth events={filtered} onSelect={openEvent} onIntroComplete={completeIntro}/>
       <div className="stage-caption"><span className="caption-mark"/>{loading ? "Gathering seismic signals" : `${filtered.length.toLocaleString()} earthquakes · past 30 days`}</div>
-      <div className="stage-coordinates" aria-hidden="true">36° 12′ N<br/>117° 32′ W</div>
+      <div className="stage-coordinates" aria-hidden="true">DRAG TO ORBIT<br/>SCROLL TO ZOOM</div>
     </section>
 
     <footer className="earth-console glass-console">
@@ -129,4 +147,3 @@ const App: React.FC = () => {
 };
 
 export default App;
-
