@@ -81,10 +81,11 @@ const ParticleEarthComponent: React.FC<ParticleEarthProps> = ({ events, onSelect
       if (!width || !height) return;
       ctx.clearRect(0, 0, width, height);
 
-      const radius = Math.min(width * .295, height * .39, 290) * zoom;
+      const compact = width < 620;
+      const radius = Math.min(width * (compact ? .56 : .39), height * (compact ? .47 : .68), compact ? 260 : 440) * zoom;
       currentRadius = radius;
-      const cx = width * .55;
-      const cy = height * .52;
+      const cx = width * (compact ? .54 : .64);
+      const cy = height * (compact ? .59 : .53);
       const progress = morph.progress;
       if (progress >= 1 && !reducedMotion) rotation += elapsed * .00005625;
       if (progress >= 1 && !introReported) {
@@ -100,12 +101,50 @@ const ParticleEarthComponent: React.FC<ParticleEarthProps> = ({ events, onSelect
       ctx.fillStyle = atmosphere;
       ctx.beginPath(); ctx.arc(cx, cy, radius * 1.45, 0, TAU); ctx.fill();
       ctx.beginPath(); ctx.ellipse(cx, cy, radius * 1.37, radius * .39, -.16, 0, TAU);
-      ctx.strokeStyle = "rgba(124, 224, 232, .13)"; ctx.lineWidth = 1; ctx.stroke();
-
       const c = Math.cos(rotation);
       const s = Math.sin(rotation);
       const ct = Math.cos(tilt);
       const st = Math.sin(tilt);
+      const project = (lat: number, lon: number) => {
+        const latitude = lat * Math.PI / 180;
+        const longitude = lon * Math.PI / 180 + rotation;
+        const x = Math.cos(latitude) * Math.sin(longitude);
+        const y = Math.sin(latitude);
+        const z = Math.cos(latitude) * Math.cos(longitude);
+        const rz = x * s + z * c;
+        return { x: cx + (x * c - z * s) * radius, y: cy - (y * ct - rz * st) * radius, depth: y * st + rz * ct };
+      };
+      ctx.strokeStyle = "rgba(206, 230, 191, .12)";
+      ctx.lineWidth = .55;
+      for (let latitude = -60; latitude <= 60; latitude += 30) {
+        ctx.beginPath();
+        let drawing = false;
+        for (let longitude = -180; longitude <= 180; longitude += 6) {
+          const point = project(latitude, longitude);
+          if (point.depth > 0) {
+            if (drawing) ctx.lineTo(point.x, point.y);
+            else ctx.moveTo(point.x, point.y);
+            drawing = true;
+          } else drawing = false;
+        }
+        ctx.stroke();
+      }
+      for (let longitude = -150; longitude <= 180; longitude += 30) {
+        ctx.beginPath();
+        let drawing = false;
+        for (let latitude = -84; latitude <= 84; latitude += 6) {
+          const point = project(latitude, longitude);
+          if (point.depth > 0) {
+            if (drawing) ctx.lineTo(point.x, point.y);
+            else ctx.moveTo(point.x, point.y);
+            drawing = true;
+          } else drawing = false;
+        }
+        ctx.stroke();
+      }
+      ctx.beginPath(); ctx.ellipse(cx, cy, radius * 1.37, radius * .39, -.16, 0, TAU);
+      ctx.strokeStyle = "rgba(206, 230, 191, .14)"; ctx.lineWidth = .8; ctx.stroke();
+
       for (const particle of particles) {
         const x = particle.fromX + (particle.x - particle.fromX) * progress;
         const y = particle.fromY + (particle.y - particle.fromY) * progress;
@@ -118,7 +157,7 @@ const ParticleEarthComponent: React.FC<ParticleEarthProps> = ({ events, onSelect
         const arrival = Math.max(.18, Math.min(1, (progress - .14) * 2.4 + .35));
         const perspective = .76 + (depth + 1) * .17;
         ctx.globalAlpha = arrival * (.38 + Math.max(0, depth) * .5);
-        ctx.fillStyle = particle.land ? "#a4f4df" : depth > .15 ? "#70cbd7" : "#4c90bd";
+        ctx.fillStyle = particle.land ? "#d8eb8f" : depth > .15 ? "#9dc2bf" : "#607c86";
         ctx.beginPath(); ctx.arc(cx + rx * radius, cy - ry * radius, particle.size * perspective, 0, TAU); ctx.fill();
         }
       }
