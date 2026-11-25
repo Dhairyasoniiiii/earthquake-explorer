@@ -1,6 +1,6 @@
 # Earthquake Explorer
 
-A React and TypeScript app that turns recent USGS earthquake activity into an interactive particle globe. Drag to orbit, scroll to zoom, use the arrow keys to rotate, and select a visible event for its details.
+A React and TypeScript app that turns recent USGS earthquake activity into an interactive particle globe. Drag to orbit, scroll or use the on-screen controls to zoom, use the arrow keys to rotate, and select a visible event for its details.
 
 ## Run locally
 
@@ -13,7 +13,7 @@ Open the local URL printed by Vite. Create a production build with `npm run buil
 
 ## Loading and animation
 
-A short 01–10% particle loading sequence plays while the particles gather into the globe. The introduction is independent of feed latency, so a slow USGS response does not block the globe. The canvas uses a capped pixel ratio and a 60 fps render target; animation pauses in hidden tabs and respects reduced-motion settings.
+A short 01–10% particle loading sequence plays while the particles gather into the globe. The introduction is independent of feed latency, so a slow USGS response does not block the globe. Drag or touch to orbit, use the wheel or on-screen buttons to zoom, and select visible earthquake markers. The canvas uses a capped pixel ratio and a 60 fps render target; animation pauses in hidden tabs and respects reduced-motion settings.
 
 ## Data
 
