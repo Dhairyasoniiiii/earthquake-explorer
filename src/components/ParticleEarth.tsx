@@ -7,12 +7,14 @@ interface ParticleEarthProps { events: Earthquake[]; onSelect: (id: string) => v
 interface Particle { x: number; y: number; z: number; fromX: number; fromY: number; fromZ: number; land: boolean; size: number }
 interface ProjectedEvent { id: string; x: number; y: number; radius: number; depth: number; magnitude: number }
 
-const PARTICLE_COUNT = 580;
+const PARTICLE_COUNT = 440;
 const TAU = Math.PI * 2;
+const FRAME_INTERVAL_MS = 1000 / 24;
 
 // A deliberately light canvas globe: no texture downloads, WebGL scene, or per-frame React work.
 const ParticleEarthComponent: React.FC<ParticleEarthProps> = ({ events, onSelect }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const drawRef = useRef<((timestamp: number) => void) | null>(null);
   const eventsRef = useRef(events);
   const selectRef = useRef(onSelect);
   eventsRef.current = events;
@@ -52,16 +54,18 @@ const ParticleEarthComponent: React.FC<ParticleEarthProps> = ({ events, onSelect
       const bounds = canvas!.getBoundingClientRect();
       width = bounds.width;
       height = bounds.height;
-      dpr = Math.min(window.devicePixelRatio || 1, 1.25);
+      dpr = Math.min(window.devicePixelRatio || 1, 1.1);
       canvas!.width = Math.round(width * dpr);
       canvas!.height = Math.round(height * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      if (reducedMotion) drawRef.current?.(performance.now());
     }
 
     function draw(timestamp: number) {
       if (document.hidden) { frame = 0; return; }
-      frame = window.requestAnimationFrame(draw);
-      if (timestamp - lastFrame < 32) return;
+      if (!reducedMotion) frame = window.requestAnimationFrame(draw);
+      if (timestamp - lastFrame < FRAME_INTERVAL_MS) return;
+      const elapsed = lastFrame ? Math.min(timestamp - lastFrame, 100) : FRAME_INTERVAL_MS;
       lastFrame = timestamp;
       if (!width || !height) return;
       ctx.clearRect(0, 0, width, height);
@@ -70,7 +74,7 @@ const ParticleEarthComponent: React.FC<ParticleEarthProps> = ({ events, onSelect
       const cx = width * .55;
       const cy = height * .52;
       const progress = morph.progress;
-      if (progress >= 1 && !reducedMotion) rotation += .0018;
+      if (progress >= 1 && !reducedMotion) rotation += elapsed * .00005625;
 
       // Soft atmosphere and the restrained orbit frame.
       const atmosphere = ctx.createRadialGradient(cx, cy, radius * .75, cx, cy, radius * 1.45);
@@ -105,7 +109,7 @@ const ParticleEarthComponent: React.FC<ParticleEarthProps> = ({ events, onSelect
       }
       ctx.globalAlpha = 1;
 
-      const liveEvents = eventsRef.current.slice(0, 110);
+      const liveEvents = eventsRef.current.slice(0, 80);
       projectedEvents = [];
       for (const event of liveEvents) {
         const lat = event.lat * Math.PI / 180;
@@ -147,6 +151,8 @@ const ParticleEarthComponent: React.FC<ParticleEarthProps> = ({ events, onSelect
       if (nearest) selectRef.current(nearest.id);
     }
 
+    drawRef.current = draw;
+
     function handleVisibilityChange() {
       if (!document.hidden && !frame) frame = window.requestAnimationFrame(draw);
     }
@@ -168,8 +174,10 @@ const ParticleEarthComponent: React.FC<ParticleEarthProps> = ({ events, onSelect
     } });
     intro.fromTo(canvas, { opacity: reducedMotion ? 1 : 0, scale: reducedMotion ? 1 : .88 }, { opacity: 1, scale: 1, duration: reducedMotion ? 0 : 1.1, ease: "power3.out" });
     frame = window.requestAnimationFrame(draw);
-    return () => { observer.disconnect(); window.cancelAnimationFrame(frame); intro.kill(); morphAnimation?.pause(); canvas.removeEventListener("click", handleClick); document.removeEventListener("visibilitychange", handleVisibilityChange); };
+    return () => { observer.disconnect(); window.cancelAnimationFrame(frame); intro.kill(); morphAnimation?.pause(); canvas.removeEventListener("click", handleClick); document.removeEventListener("visibilitychange", handleVisibilityChange); drawRef.current = null; };
   }, []);
+
+  useEffect(() => { drawRef.current?.(performance.now()); }, [events]);
 
   return <canvas className="particle-earth" ref={canvasRef} role="img" aria-label="Animated particle globe showing recent earthquake locations"/>;
 };
